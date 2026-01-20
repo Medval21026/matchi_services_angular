@@ -1,0 +1,145 @@
+<!-- Modal Backdrop -->
+<div 
+  *ngIf="isOpen" 
+  class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+  (click)="closeModal()"
+>
+  <!-- Modal Content -->
+  <div 
+    class="bg-white rounded-lg shadow-xl w-full max-w-md"
+    (click)="$event.stopPropagation()"
+  >
+    <!-- Modal Header -->
+    <div class="flex items-center justify-between p-6 border-b border-gray-200">
+      <h3 class="text-xl font-semibold text-gray-900">
+        {{ isEditMode ? ('reservation.modify' | translate) : ('reservation.new' | translate) }}
+      </h3>
+      <button
+        type="button"
+        class="text-gray-400 hover:text-gray-600 transition-colors"
+        (click)="closeModal()"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Modal Body -->
+    <form [formGroup]="reservationForm" (ngSubmit)="onSubmit()" class="p-6">
+      <!-- Error Message -->
+      <div *ngIf="errorMessage" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+        {{ errorMessage }}
+      </div>
+
+      <!-- Terrain (hidden si un seul terrain) -->
+      <div class="mb-4" [class.hidden]="!showTerrainInput">
+        <label for="terrainId" class="block text-sm font-medium text-gray-700 mb-2">
+          {{ 'reservation.terrain' | translate }}
+        </label>
+        <select
+          id="terrainId"
+          formControlName="terrainId"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          [class.border-red-500]="getFieldError('terrainId') || errorMessage"
+        >
+          <option value="">{{ 'reservation.selectTerrain' | translate }}</option>
+          <option *ngFor="let terrain of terrains" [value]="terrain.id">
+            {{ terrain.nom }}
+          </option>
+        </select>
+        <p *ngIf="getFieldError('terrainId')" class="mt-1 text-sm text-red-600">
+          {{ getFieldError('terrainId') }}
+        </p>
+        <p *ngIf="errorMessage && !getFieldError('terrainId')" class="mt-1 text-sm text-red-600">
+          {{ errorMessage }}
+        </p>
+      </div>
+
+      <!-- Date -->
+      <div class="mb-4">
+        <label for="date" class="block text-sm font-medium text-gray-700 mb-2">
+          {{ 'reservation.date' | translate }} <span class="text-red-500">*</span>
+        </label>
+        <input
+          type="date"
+          id="date"
+          formControlName="date"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          [class.border-red-500]="getFieldError('date')"
+        />
+        <p *ngIf="getFieldError('date')" class="mt-1 text-sm text-red-600">
+          {{ getFieldError('date') }}
+        </p>
+      </div>
+
+      <!-- Heure de début -->
+      <div class="mb-4">
+        <label for="heureDebut" class="block text-sm font-medium text-gray-700 mb-2">
+          {{ 'reservation.startTime' | translate }} <span class="text-red-500">*</span>
+        </label>
+        <input
+          type="time"
+          id="heureDebut"
+          formControlName="heureDebut"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          [class.border-red-500]="getFieldError('heureDebut')"
+        />
+        <p *ngIf="getFieldError('heureDebut')" class="mt-1 text-sm text-red-600">
+          {{ getFieldError('heureDebut') }}
+        </p>
+      </div>
+
+      <!-- Numéro de téléphone client -->
+      <div class="mb-4">
+        <label for="clientTelephone" class="block text-sm font-medium text-gray-700 mb-2">
+          {{ 'reservation.clientPhone' | translate }} <span class="text-red-500">*</span>
+        </label>
+        <input
+          type="tel"
+          id="clientTelephone"
+          formControlName="clientTelephone"
+          [placeholder]="'reservation.phonePlaceholderInput' | translate"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          [class.border-red-500]="getFieldError('clientTelephone')"
+        />
+        <p *ngIf="getFieldError('clientTelephone')" class="mt-1 text-sm text-red-600">
+          {{ getFieldError('clientTelephone') }}
+        </p>
+      </div>
+
+      <!-- Prix -->
+      <div class="mb-6">
+        <label for="prix" class="block text-sm font-medium text-gray-700 mb-2">
+          {{ 'reservation.price' | translate }} <span class="text-red-500">*</span>
+        </label>
+        <input
+          type="number"
+          id="prix"
+          formControlName="prix"
+          [placeholder]="'reservation.pricePlaceholder' | translate"
+          min="0"
+          step="0.01"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          [class.border-red-500]="getFieldError('prix')"
+        />
+        <p *ngIf="getFieldError('prix')" class="mt-1 text-sm text-red-600">
+          {{ getFieldError('prix') }}
+        </p>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+  
+        <button
+          type="submit"
+          class="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          [disabled]="isLoading"
+        >
+          <span *ngIf="!isLoading">{{ isEditMode ? ('reservation.modifyButtonText' | translate) : ('reservation.addButton' | translate) }}</span>
+          <span *ngIf="isLoading">{{ 'reservation.loading' | translate }}</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,235 @@
+<!-- Modal Backdrop -->
+<div 
+  *ngIf="isOpen" 
+  class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto"
+  (click)="closeModal()"
+>
+  <!-- Modal Content -->
+  <div 
+    class="bg-white rounded-lg shadow-xl w-full max-w-2xl my-8 flex flex-col max-h-[90vh]"
+    (click)="$event.stopPropagation()"
+  >
+    <!-- Modal Header -->
+    <div class="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
+      <h3 class="text-xl font-semibold text-gray-900">
+        {{ 'abonnement.new' | translate }}
+      </h3>
+      <button
+        type="button"
+        class="text-gray-400 hover:text-gray-600 transition-colors"
+        (click)="closeModal()"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Modal Body (Scrollable) -->
+    <div class="overflow-y-auto flex-1">
+      <form [formGroup]="abonnementForm" (ngSubmit)="onSubmit()" class="p-6">
+      <!-- Error Message -->
+      <div *ngIf="errorMessage" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+        {{ errorMessage }}
+      </div>
+
+      <!-- Terrain (hidden si un seul terrain) -->
+      <div class="mb-4" [class.hidden]="!showTerrainInput">
+        <label for="terrainId" class="block text-sm font-medium text-gray-700 mb-2">
+          {{ 'abonnement.terrain' | translate }} <span class="text-red-500">*</span>
+        </label>
+        <select
+          id="terrainId"
+          formControlName="terrainId"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          [class.border-red-500]="getFieldError('terrainId')"
+        >
+          <option value="">{{ 'abonnement.selectTerrain' | translate }}</option>
+          <option *ngFor="let terrain of terrains" [value]="terrain.id">
+            {{ terrain.nom }}
+          </option>
+        </select>
+        <p *ngIf="getFieldError('terrainId')" class="mt-1 text-sm text-red-600">
+          {{ getFieldError('terrainId') }}
+        </p>
+      </div>
+
+      <!-- Téléphone Client -->
+      <div class="mb-4">
+        <label for="clientTelephone" class="block text-sm font-medium text-gray-700 mb-2">
+          {{ 'abonnement.clientPhone' | translate }} <span class="text-red-500">*</span>
+        </label>
+        <input
+          type="tel"
+          id="clientTelephone"
+          formControlName="clientTelephone"
+          [placeholder]="'placeholder.phoneExample' | translate"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          [class.border-red-500]="getFieldError('clientTelephone')"
+        />
+        <p *ngIf="getFieldError('clientTelephone')" class="mt-1 text-sm text-red-600">
+          {{ getFieldError('clientTelephone') }}
+        </p>
+      </div>
+
+      <!-- Date Début et Date Fin -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label for="dateDebut" class="block text-sm font-medium text-gray-700 mb-2">
+            {{ 'abonnement.startDate' | translate }} <span class="text-red-500">*</span>
+          </label>
+          <input
+            type="date"
+            id="dateDebut"
+            formControlName="dateDebut"
+            [min]="getTodayDate()"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            [class.border-red-500]="getFieldError('dateDebut')"
+          />
+          <p *ngIf="getFieldError('dateDebut')" class="mt-1 text-sm text-red-600">
+            {{ getFieldError('dateDebut') }}
+          </p>
+        </div>
+
+        <div>
+          <label for="dateFin" class="block text-sm font-medium text-gray-700 mb-2">
+            {{ 'abonnement.endDate' | translate }} <span class="text-red-500">*</span>
+          </label>
+          <input
+            type="date"
+            id="dateFin"
+            formControlName="dateFin"
+            [min]="abonnementForm.get('dateDebut')?.value || getTodayDate()"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            [class.border-red-500]="getFieldError('dateFin') || getDateRangeError()"
+          />
+          <p *ngIf="getFieldError('dateFin')" class="mt-1 text-sm text-red-600">
+            {{ getFieldError('dateFin') }}
+          </p>
+          <p *ngIf="getDateRangeError() && !getFieldError('dateFin')" class="mt-1 text-sm text-red-600">
+            {{ getDateRangeError() }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Horaires -->
+      <div class="mb-4">
+        <div class="flex items-center justify-between mb-3">
+          <label class="block text-sm font-medium text-gray-700">
+            {{ 'abonnement.schedules' | translate }} <span class="text-red-500">*</span>
+          </label>
+          <button
+            type="button"
+            class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            (click)="addHoraire()"
+          >
+            + {{ 'abonnement.addSchedule' | translate }}
+          </button>
+        </div>
+
+        <div class="space-y-3">
+          <div
+            *ngFor="let horaire of horaires.controls; let i = index"
+            class="p-4 border border-gray-200 rounded-lg bg-gray-50"
+          >
+            <div class="flex items-start justify-between mb-3">
+              <span class="text-sm font-medium text-gray-700">{{ 'abonnement.schedule' | translate }} {{ i + 1 }}</span>
+              <button
+                type="button"
+                class="text-red-600 hover:text-red-800 transition-colors"
+                (click)="removeHoraire(i)"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3" [formGroup]="$any(horaires.at(i))">
+              <div>
+                <label [for]="'jourSemaine_' + i" class="block text-xs font-medium text-gray-600 mb-1">
+                  {{ 'abonnement.dayOfWeek' | translate }}
+                </label>
+                <select
+                  [id]="'jourSemaine_' + i"
+                  formControlName="jourSemaine"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  [class.border-red-500]="getHoraireFieldError(i, 'jourSemaine')"
+                >
+                  <option value="">{{ 'abonnement.select' | translate }}</option>
+                  <option *ngFor="let jour of joursOptions" [value]="jour">
+                    {{ formatJour(jour) }}
+                  </option>
+                </select>
+                <p *ngIf="getHoraireFieldError(i, 'jourSemaine')" class="mt-1 text-xs text-red-600">
+                  {{ getHoraireFieldError(i, 'jourSemaine') }}
+                </p>
+              </div>
+
+              <div>
+                <label [for]="'heureDebut_' + i" class="block text-xs font-medium text-gray-600 mb-1">
+                  {{ 'abonnement.startTime' | translate }}
+                </label>
+                <input
+                  type="time"
+                  [id]="'heureDebut_' + i"
+                  formControlName="heureDebut"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  [class.border-red-500]="getHoraireFieldError(i, 'heureDebut')"
+                />
+                <p *ngIf="getHoraireFieldError(i, 'heureDebut')" class="mt-1 text-xs text-red-600">
+                  {{ getHoraireFieldError(i, 'heureDebut') }}
+                </p>
+              </div>
+
+              <div>
+                <label [for]="'prixHeure_' + i" class="block text-xs font-medium text-gray-600 mb-1">
+                  {{ 'abonnement.pricePerHour' | translate }}
+                </label>
+                <input
+                  type="number"
+                  [id]="'prixHeure_' + i"
+                  formControlName="prixHeure"
+                  [placeholder]="'placeholder.priceExample' | translate"
+                  min="0"
+                  step="0.01"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  [class.border-red-500]="getHoraireFieldError(i, 'prixHeure')"
+                />
+                <p *ngIf="getHoraireFieldError(i, 'prixHeure')" class="mt-1 text-xs text-red-600">
+                  {{ getHoraireFieldError(i, 'prixHeure') }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="horaires.length === 0" class="text-sm text-gray-500 italic text-center py-4">
+            {{ 'abonnement.noSchedule' | translate }}
+          </div>
+        </div>
+      </div>
+
+      </form>
+    </div>
+
+    <!-- Modal Footer (Fixed) -->
+    <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-200 flex-shrink-0">
+      <button
+        type="button"
+        class="px-4 py-2 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-lg transition-colors font-medium"
+        (click)="closeModal()"
+      >
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button
+        type="button"
+        class="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        [disabled]="isLoading || abonnementForm.invalid"
+        (click)="onSubmit()"
+      >
+        <span *ngIf="!isLoading">{{ 'abonnement.create' | translate }}</span>
+        <span *ngIf="isLoading">{{ 'abonnement.creating' | translate }}</span>
+      </button>
+    </div>
+  </div>
+</div>

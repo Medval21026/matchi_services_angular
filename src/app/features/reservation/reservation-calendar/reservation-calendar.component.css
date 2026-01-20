@@ -1,0 +1,8 @@
+/* Styles spécifiques pour le planning */
+table {
+  table-layout: fixed;
+}
+
+td {
+  vertical-align: top;
+}

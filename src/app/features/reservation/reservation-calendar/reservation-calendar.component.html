@@ -1,0 +1,146 @@
+<div class="h-full flex flex-col bg-gray-100">
+
+  <!-- HEADER -->
+  <div class="px-4 py-4 bg-white shadow-sm flex-shrink-0">
+    <h1 class="text-xl sm:text-3xl font-bold text-gray-900">
+      {{ 'planning.title' | translate }}
+    </h1>
+    <p class="text-sm sm:text-base text-gray-600">
+      {{ 'planning.subtitle' | translate }}
+    </p>
+  </div>
+
+  <!-- LEGEND + NAVIGATION -->
+  <div class="px-4 py-3 bg-white border-b flex-shrink-0">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+
+      <!-- LEGEND -->
+      <div class="flex gap-4 flex-wrap text-xs sm:text-sm">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-green-500"></span> {{ 'planning.legend.abonnement' | translate }}
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-cyan-500"></span> {{ 'planning.legend.reservation' | translate }}
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-gray-500"></span> {{ 'planning.legend.indisponible' | translate }}
+        </div>
+      </div>
+
+      <!-- WEEK NAV -->
+      <div class="flex items-center gap-2">
+        <button (click)="previousWeek()" class="p-2 rounded bg-gray-100 hover:bg-gray-200">
+          ‹
+        </button>
+        <button
+          (click)="goToCurrentWeek()"
+          class="px-3 py-2 rounded bg-gray-100 text-xs sm:text-sm font-medium"
+        >
+          {{ getWeekRange() }}
+        </button>
+        <button (click)="nextWeek()" class="p-2 rounded bg-gray-100 hover:bg-gray-200">
+          ›
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TERRAIN SELECT -->
+  <div *ngIf="terrains.length > 1" class="px-4 py-3 bg-white border-b flex-shrink-0">
+    <label class="text-sm font-medium text-gray-700 block mb-1">
+      {{ 'planning.terrain' | translate }}
+    </label>
+    <select
+      [(ngModel)]="selectedTerrainId"
+      (change)="onTerrainChange()"
+      class="w-full sm:w-64 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+    >
+      <option *ngFor="let terrain of terrains" [value]="terrain.id">
+        {{ terrain.nom }}
+      </option>
+    </select>
+  </div>
+
+  <!-- LOADING -->
+  <div *ngIf="isLoading" class="flex-1 flex items-center justify-center">
+    <div class="animate-spin h-10 w-10 border-b-2 border-blue-500 rounded-full"></div>
+  </div>
+
+  <!-- CALENDAR WRAPPER (SCROLLABLE) -->
+  <div *ngIf="!isLoading" class="flex-1 overflow-hidden">
+
+    <!-- SCROLL ZONE -->
+    <div class="h-full overflow-auto bg-white">
+
+      <table class="min-w-[900px] border-collapse">
+
+        <!-- HEADER DAYS -->
+        <thead class="sticky top-0 bg-gray-50 z-20">
+          <tr>
+            <th
+              class="sticky left-0 z-30 bg-gray-50 px-3 py-2 text-xs font-semibold border"
+            >
+              {{ 'planning.time' | translate }}
+            </th>
+            <th
+              *ngFor="let day of daysOfWeek"
+              class="px-3 py-2 text-center text-xs font-semibold border"
+            >
+              <div>{{ getDayName(day) }}</div>
+              <div class="text-gray-400 font-normal">
+                {{ formatDateDisplay(day) }}
+              </div>
+            </th>
+          </tr>
+        </thead>
+
+        <!-- BODY -->
+        <tbody>
+          <tr *ngFor="let hour of hours">
+            <!-- HEURE -->
+            <td
+              class="sticky left-0 z-10 bg-gray-50 px-3 py-2 text-xs sm:text-sm font-medium border"
+            >
+              {{ hour }}
+            </td>
+
+            <!-- SLOTS -->
+            <td
+              *ngFor="let day of daysOfWeek"
+              class="border relative px-1 py-1"
+              [attr.rowspan]="shouldShowSlot(day, hour) ? getSlotRowSpan(day, hour) : null"
+              [class.hidden]="isSlotOccupied(day, hour) && !shouldShowSlot(day, hour)"
+            >
+              <div
+                *ngIf="shouldShowSlot(day, hour)"
+                class="rounded border-2 p-1 text-xs flex flex-col justify-center cursor-pointer"
+                [ngClass]="getTypeClass(getSlotType(day, hour), day, hour)"
+                [style.height.px]="getSlotRowSpan(day, hour) * 48"
+                [title]="getSlotDescription(day, hour)"
+              >
+                <div class="font-semibold truncate">
+                  {{ getFormattedDescription(day, hour) }}
+                </div>
+                <span *ngIf="getClientPhone(day, hour)" 
+                     class="truncate text-xs font-semibold block"
+                     [ngClass]="getSlotType(day, hour) === 'RESERVATION_PONCTUELLE' && !isSlotInPast(day, hour) ? 'text-cyan-900' : 'text-gray-900'">
+                  Tel: {{ getClientPhone(day, hour) }}
+                </span>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+
+      </table>
+    </div>
+  </div>
+
+  <!-- EMPTY -->
+  <div
+    *ngIf="!isLoading && hours.length === 0"
+    class="p-8 text-center text-gray-500 bg-white"
+  >
+    {{ 'planning.noHours' | translate }}
+  </div>
+
+</div>

@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* You can add global styles to this file, and also import other style files */
+
+/* Styles pour MatSnackBar */
+.snackbar-success {
+  background-color: #10b981 !important; /* green-500 */
+  color: white !important;
+}
+
+.snackbar-error {
+  background-color: #ef4444 !important; /* red-500 */
+  color: white !important;
+}
+
+.snackbar-warning {
+  background-color: #f59e0b !important; /* amber-500 */
+  color: white !important;
+}
+
+.snackbar-info {
+  background-color: #3b82f6 !important; /* blue-500 */
+  color: white !important;
+}

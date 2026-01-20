@@ -1,0 +1,192 @@
+<div class="max-w-7xl mx-auto p-6 flex flex-col" style="height: calc(100vh - 120px);">
+  
+  <!-- Header (Fixed) -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 pb-4 border-b border-gray-200 flex-shrink-0">
+    <h2 class="text-2xl font-bold text-gray-900 mb-4 sm:mb-0">
+      {{ 'terrain.title' | translate }}
+    </h2>
+
+    <button
+      class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+      (click)="createTerrain()"
+    >
+      + {{ 'terrain.new' | translate }}
+    </button>
+  </div>
+
+  <!-- Recherche (Fixed) -->
+  <div class="mb-6 p-4 bg-gray-50 rounded-lg flex-shrink-0">
+    <div class="flex flex-col sm:flex-row gap-4">
+      <div class="flex-1">
+        <label for="searchTerm" class="block text-sm font-medium text-gray-700 mb-2">
+          {{ 'terrain.search' | translate }}
+        </label>
+        <input
+          type="text"
+          id="searchTerm"
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="onSearch()"
+          [placeholder]="'terrain.searchPlaceholder' | translate"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading (Fixed) -->
+  <div *ngIf="isLoading" class="flex justify-center items-center py-12 flex-shrink-0">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+  </div>
+
+  <!-- Cards Container (Scrollable) -->
+  <div *ngIf="!isLoading" class="overflow-y-auto flex-1">
+    <!-- Cards (Mobile View) -->
+    <div class="grid grid-cols-1 gap-4 md:hidden pb-4">
+      <div
+        *ngFor="let terrain of filteredTerrains; trackBy: trackById"
+        class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow"
+      >
+        <!-- Header avec Actions -->
+        <div class="flex items-start justify-between mb-3 pb-3 border-b border-gray-100">
+          <div class="flex-1">
+            <div class="font-semibold text-gray-900">{{ terrain.nom }}</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+              (click)="edit(terrain)"
+              title="Modifier"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5
+                     m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                </path>
+              </svg>
+            </button>
+            <button
+              class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              (click)="delete(terrain.id!)"
+              title="Supprimer"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862
+                     a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6
+                     m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                </path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Contenu de la card -->
+        <div class="space-y-2">
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+            <span class="text-sm text-gray-600">{{ 'terrain.address' | translate }}:</span>
+            <span class="text-sm font-medium text-gray-900">{{ terrain.adresse }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span class="text-sm text-gray-600">{{ 'terrain.schedules' | translate }}:</span>
+            <span class="text-sm font-medium text-gray-900">{{ formatTime(terrain.heureOuverture) }} - {{ formatTime(terrain.heureFermeture) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State for Cards -->
+      <div *ngIf="filteredTerrains.length === 0" class="col-span-full bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+        <p class="text-gray-500 italic">{{ 'terrain.noFound' | translate }}</p>
+      </div>
+    </div>
+
+    <!-- Table (Desktop View) -->
+    <div class="hidden md:block bg-white rounded-lg shadow overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-blue-600 text-white">
+            <tr>
+              <th [class]="isRTL ? 'px-6 py-3 text-right text-xs font-semibold uppercase' : 'px-6 py-3 text-left text-xs font-semibold uppercase'">{{ 'terrain.name' | translate }}</th>
+              <th [class]="isRTL ? 'px-6 py-3 text-right text-xs font-semibold uppercase' : 'px-6 py-3 text-left text-xs font-semibold uppercase'">{{ 'terrain.address' | translate }}</th>
+              <th [class]="isRTL ? 'px-6 py-3 text-right text-xs font-semibold uppercase' : 'px-6 py-3 text-left text-xs font-semibold uppercase'">{{ 'terrain.openingTime' | translate }}</th>
+              <th [class]="isRTL ? 'px-6 py-3 text-right text-xs font-semibold uppercase' : 'px-6 py-3 text-left text-xs font-semibold uppercase'">{{ 'terrain.closingTime' | translate }}</th>
+              <th [class]="isRTL ? 'px-6 py-3 text-right text-xs font-semibold uppercase' : 'px-6 py-3 text-left text-xs font-semibold uppercase'">{{ 'terrain.actions' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <tr *ngFor="let terrain of filteredTerrains; trackBy: trackById" class="hover:bg-gray-50">
+              <td [class]="isRTL ? 'px-6 py-4 text-sm text-gray-900 text-right' : 'px-6 py-4 text-sm text-gray-900'">
+                {{ terrain.nom }}
+              </td>
+              <td [class]="isRTL ? 'px-6 py-4 text-sm text-gray-900 text-right' : 'px-6 py-4 text-sm text-gray-900'">
+                {{ terrain.adresse }}
+              </td>
+              <td [class]="isRTL ? 'px-6 py-4 text-sm text-gray-900 text-right' : 'px-6 py-4 text-sm text-gray-900'">
+                {{ formatTime(terrain.heureOuverture) }}
+              </td>
+              <td [class]="isRTL ? 'px-6 py-4 text-sm text-gray-900 text-right' : 'px-6 py-4 text-sm text-gray-900'">
+                {{ formatTime(terrain.heureFermeture) }}
+              </td>
+              <td [class]="isRTL ? 'px-6 py-4 text-sm font-medium text-right' : 'px-6 py-4 text-sm font-medium'">
+                <div class="flex items-center gap-2">
+                  <button
+                    class="text-blue-600 hover:text-blue-800 transition-colors"
+                    (click)="edit(terrain)"
+                    [title]="'terrain.modifyButton' | translate"
+                  >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5
+                           m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                      </path>
+                    </svg>
+                  </button>
+                  <button
+                    class="text-red-600 hover:text-red-800 transition-colors"
+                    (click)="delete(terrain.id!)"
+                    [title]="'terrain.deleteButton' | translate"
+                  >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862
+                           a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6
+                           m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                      </path>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <!-- Empty State -->
+            <tr *ngIf="filteredTerrains.length === 0">
+              <td colspan="5" class="px-6 py-10 text-center text-gray-500 italic">
+                {{ 'terrain.noFound' | translate }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modals -->
+  <app-ajouter-terrain-modal
+    [isOpen]="isAddModalOpen"
+    (close)="onAddModalClose()"
+    (saved)="onAddModalSaved()"
+  ></app-ajouter-terrain-modal>
+
+  <app-modifier-terrain-modal
+    [isOpen]="isEditModalOpen"
+    [terrain]="selectedTerrain"
+    (close)="onEditModalClose()"
+    (saved)="onEditModalSaved()"
+  ></app-modifier-terrain-modal>
+
+</div>

@@ -1,0 +1,20 @@
+export enum StatutAbonnement {
+  ACTIF = 'ACTIF',
+  SUSPENDU = 'SUSPENDU',
+  TERMINE = 'TERMINE'
+}
+
+export enum JourSemaine {
+  LUNDI = 'LUNDI',
+  MARDI = 'MARDI',
+  MERCREDI = 'MERCREDI',
+  JEUDI = 'JEUDI',
+  VENDREDI = 'VENDREDI',
+  SAMEDI = 'SAMEDI',
+  DIMANCHE = 'DIMANCHE'
+}
+
+export enum TypeReservation {
+  ABONNEMENT = 'ABONNEMENT',
+  RESERVATION_PONCTUELLE = 'RESERVATION_PONCTUELLE'
+}

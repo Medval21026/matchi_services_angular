@@ -1,0 +1,21 @@
+import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { catchError, throwError } from 'rxjs';
+
+export const errorInterceptor: HttpInterceptorFn = (req, next) => {
+  const router = inject(Router);
+
+  return next(req).pipe(
+    catchError((error: HttpErrorResponse) => {
+      if (error.status === 401) {
+        // Token invalide ou expiré
+        localStorage.removeItem('token');
+        localStorage.removeItem('currentUser');
+        router.navigate(['/login']);
+      }
+
+      return throwError(() => error);
+    })
+  );
+};

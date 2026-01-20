@@ -1,0 +1,5 @@
+/* Sidebar styles */
+aside {
+  display: flex;
+  flex-direction: column;
+}
