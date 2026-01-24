@@ -6,7 +6,9 @@
       {{ 'terrain.title' | translate }}
     </h2>
 
+    <!-- Afficher le bouton seulement si le propriétaire n'a pas encore de terrain -->
     <button
+      *ngIf="!hasTerrain"
       class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
       (click)="createTerrain()"
     >

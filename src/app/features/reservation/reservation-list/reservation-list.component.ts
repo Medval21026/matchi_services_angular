@@ -9,13 +9,14 @@ import { TranslationService } from '../../../core/services/translation.service';
 import { ReservationPonctuelleDTO } from '../../../core/models/reservation.model';
 import { TerrainServiceDTO } from '../../../core/models/terrain.model';
 import { AjouterReservationModalComponent } from '../ajouter-reservation-modal/ajouter-reservation-modal.component';
+import { ModifierReservationModalComponent } from '../modifier-reservation-modal/modifier-reservation-modal.component';
 import { ConfirmationDialogComponent } from '../../../shared/components/confirmation-dialog/confirmation-dialog.component';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 
 @Component({
   selector: 'app-reservation-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, AjouterReservationModalComponent, TranslatePipe],
+  imports: [CommonModule, FormsModule, AjouterReservationModalComponent, ModifierReservationModalComponent, TranslatePipe],
   templateUrl: './reservation-list.component.html',
   styleUrls: ['./reservation-list.component.css']
 })
@@ -30,7 +31,8 @@ export class ReservationListComponent implements OnInit {
   searchTelephone = '';
   searchDate = '';
 
-  isModalOpen = false;
+  isAddModalOpen = false;
+  isEditModalOpen = false;
   selectedReservation?: ReservationPonctuelleDTO;
 
   constructor(
@@ -81,23 +83,32 @@ export class ReservationListComponent implements OnInit {
 
   createReservation(): void {
     this.selectedReservation = undefined;
-    this.isModalOpen = true;
+    this.isAddModalOpen = true;
     this.cdr.detectChanges();
   }
 
   edit(reservation: ReservationPonctuelleDTO): void {
     this.selectedReservation = reservation;
-    this.isModalOpen = true;
+    this.isEditModalOpen = true;
     this.cdr.detectChanges();
   }
 
-  onModalClose(): void {
-    this.isModalOpen = false;
+  onAddModalClose(): void {
+    this.isAddModalOpen = false;
+    this.cdr.detectChanges();
+  }
+
+  onAddModalSaved(): void {
+    this.loadReservations();
+  }
+
+  onEditModalClose(): void {
+    this.isEditModalOpen = false;
     this.selectedReservation = undefined;
     this.cdr.detectChanges();
   }
 
-  onModalSaved(): void {
+  onEditModalSaved(): void {
     this.loadReservations();
   }
 

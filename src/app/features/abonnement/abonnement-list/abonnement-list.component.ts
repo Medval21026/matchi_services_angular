@@ -67,7 +67,7 @@ export class AbonnementListComponent implements OnInit {
       },
       error: (error) => {
         console.error('Erreur de chargement:', error);
-        this.notificationService.showError('Erreur lors du chargement des données');
+        this.notificationService.showError(this.translationService.translate('abonnement.loadError'));
         this.isLoading = false;
         this.cdr.detectChanges();
       }
@@ -151,12 +151,12 @@ export class AbonnementListComponent implements OnInit {
       if (result === true) {
         this.abonnementService.deleteAbonnement(id).subscribe({
           next: () => {
-            this.notificationService.showSuccess('Abonnement supprimé avec succès');
+            this.notificationService.showSuccess(this.translationService.translate('abonnement.deletedSuccess'));
             this.loadAbonnements();
           },
           error: (error) => {
             console.error('Erreur de suppression:', error);
-            this.notificationService.showError('Erreur lors de la suppression de l\'abonnement');
+            this.notificationService.showError(this.translationService.translate('abonnement.deleteError'));
             this.cdr.detectChanges();
           }
         });

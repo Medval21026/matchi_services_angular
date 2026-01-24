@@ -94,12 +94,12 @@ export class AjouterAbonnementModalComponent implements OnInit {
     const currentUser = this.authService.getCurrentUser();
     
     if (!currentUser?.id) {
-      this.notificationService.showError('Utilisateur non connecté');
+      this.notificationService.showError(this.translationService.translate('abonnement.userNotConnected'));
       return;
     }
 
     if (!currentUser.terrainIds || currentUser.terrainIds.length === 0) {
-      this.notificationService.showError('Aucun terrain associé à votre compte');
+      this.notificationService.showError(this.translationService.translate('abonnement.noTerrainAssociated'));
       return;
     }
 
@@ -110,7 +110,7 @@ export class AjouterAbonnementModalComponent implements OnInit {
         this.terrains = data.filter(t => userTerrainIds.includes(Number(t.id)));
 
         if (this.terrains.length === 0) {
-          this.notificationService.showError('Aucun terrain trouvé pour votre compte');
+          this.notificationService.showError(this.translationService.translate('abonnement.noTerrainFound'));
           return;
         }
 
@@ -123,7 +123,7 @@ export class AjouterAbonnementModalComponent implements OnInit {
       },
       error: (error) => {
         console.error('Erreur de chargement des terrains:', error);
-        this.notificationService.showError('Erreur lors du chargement des terrains');
+        this.notificationService.showError(this.translationService.translate('abonnement.terrainLoadError'));
       }
     });
   }
@@ -155,12 +155,12 @@ export class AjouterAbonnementModalComponent implements OnInit {
   onSubmit(): void {
     if (this.abonnementForm.invalid) {
       this.markFormGroupTouched(this.abonnementForm);
-      this.errorMessage = 'Veuillez remplir tous les champs requis correctement.';
+      this.errorMessage = this.translationService.translate('abonnement.fillAllFields');
       return;
     }
 
     if (this.horaires.length === 0) {
-      this.notificationService.showWarning('Veuillez ajouter au moins un horaire');
+      this.notificationService.showWarning(this.translationService.translate('abonnement.addAtLeastOneSchedule'));
       return;
     }
 
@@ -185,7 +185,7 @@ export class AjouterAbonnementModalComponent implements OnInit {
     this.abonnementService.createAbonnement(abonnement).subscribe({
       next: () => {
         this.isLoading = false;
-        this.notificationService.showSuccess('Abonnement créé avec succès');
+        this.notificationService.showSuccess(this.translationService.translate('abonnement.createdSuccess'));
         this.saved.emit();
         this.closeModal();
       },
@@ -200,28 +200,54 @@ export class AjouterAbonnementModalComponent implements OnInit {
 
   private extractErrorMessage(error: HttpErrorResponse): string {
     if (error.error instanceof ErrorEvent) {
-      return `Erreur client: ${error.error.message}`;
+      return `${this.translationService.translate('abonnement.clientError')}: ${error.error.message}`;
     } else if (error.status === 0) {
-      return 'Erreur de connexion: Le serveur backend est inaccessible.';
+      return this.translationService.translate('abonnement.connectionError');
     } else {
-      let backendMessage = 'Une erreur inattendue est survenue.';
+      let backendMessage = this.translationService.translate('abonnement.unexpectedError');
       if (error.error && typeof error.error === 'string') {
         backendMessage = error.error;
       } else if (error.error && error.error.message) {
         backendMessage = error.error.message;
+      } else if (error.error && error.error.error) {
+        backendMessage = error.error.error;
+      }
+
+      // Détecter le message d'erreur de conflit lors de la création d'horaire
+      // Format: "Erreur lors de la création de l'horaire pour le SAMEDI (semaine 0) : Conflit avec une réservation ponctuelle : Le créneau 19:00-20:00 est déjà réservé pour ce terrain le 2026-01-24. Réservation existante : 19:00-20:00"
+      const scheduleConflictMatch = backendMessage.match(/Erreur lors de la création de l'horaire pour le (\w+) \(semaine (\d+)\)\s*:\s*Conflit avec une réservation ponctuelle\s*:\s*Le créneau ([\d:]+-[\d:]+) est déjà réservé pour ce terrain le ([\d-]+)\.\s*Réservation existante\s*:\s*([\d:]+-[\d:]+)/i);
+      
+      if (scheduleConflictMatch) {
+        const jour = scheduleConflictMatch[1];
+        const semaine = scheduleConflictMatch[2];
+        const creneau = scheduleConflictMatch[3] || scheduleConflictMatch[5];
+        const date = scheduleConflictMatch[4];
+        
+        // Traduire le jour si possible
+        const jourTraduit = this.translationService.translate(`days.${jour}`) !== `days.${jour}` 
+          ? this.translationService.translate(`days.${jour}`)
+          : jour;
+        
+        // Utiliser la traduction avec remplacement des placeholders
+        let translated = this.translationService.translate('abonnement.scheduleCreationConflict');
+        translated = translated.replace(/{jour}/g, jourTraduit);
+        translated = translated.replace(/{semaine}/g, semaine);
+        translated = translated.replace(/{creneau}/g, creneau);
+        translated = translated.replace(/{date}/g, date);
+        return translated;
       }
 
       switch (error.status) {
         case 400:
-          return `Données invalides: ${backendMessage}`;
+          return `${this.translationService.translate('abonnement.invalidData')}: ${backendMessage}`;
         case 401:
-          return 'Non autorisé: Votre session a expiré.';
+          return this.translationService.translate('abonnement.unauthorized');
         case 404:
-          return `Ressource non trouvée: ${backendMessage}`;
+          return `${this.translationService.translate('abonnement.resourceNotFound')}: ${backendMessage}`;
         case 500:
-          return `Erreur serveur: ${backendMessage}`;
+          return `${this.translationService.translate('abonnement.serverError')}: ${backendMessage}`;
         default:
-          return `Erreur lors de la création de l'abonnement (Code: ${error.status}). ${backendMessage}`;
+          return `${this.translationService.translate('abonnement.creationError')} (${this.translationService.translate('common.code')}: ${error.status}). ${backendMessage}`;
       }
     }
   }
@@ -243,13 +269,13 @@ export class AjouterAbonnementModalComponent implements OnInit {
   getFieldError(fieldName: string): string {
     const field = this.abonnementForm.get(fieldName);
     if (field?.hasError('required') && field.touched) {
-      return 'Ce champ est requis';
+      return this.translationService.translate('abonnement.fieldRequired');
     }
     if (field?.hasError('pattern') && field.touched) {
-      return 'Format invalide';
+      return this.translationService.translate('abonnement.fieldInvalidFormat');
     }
     if (field?.hasError('min') && field.touched) {
-      return 'La valeur ne peut pas être négative';
+      return this.translationService.translate('abonnement.valueCannotBeNegative');
     }
     return '';
   }
@@ -258,17 +284,17 @@ export class AjouterAbonnementModalComponent implements OnInit {
     const horaireGroup = this.horaires.at(index) as FormGroup;
     const field = horaireGroup.get(fieldName);
     if (field?.hasError('required') && field.touched) {
-      return 'Requis';
+      return this.translationService.translate('abonnement.fieldRequiredShort');
     }
     if (field?.hasError('min') && field.touched) {
-      return 'Valeur minimale: 0';
+      return this.translationService.translate('abonnement.minValue');
     }
     return '';
   }
 
   getDateRangeError(): string {
     if (this.abonnementForm.hasError('dateRangeInvalid')) {
-      return 'La date de fin doit être postérieure ou égale à la date de début';
+      return this.translationService.translate('abonnement.dateEndAfterOrEqualStart');
     }
     return '';
   }

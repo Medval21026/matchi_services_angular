@@ -197,12 +197,18 @@
     </div>
   </div>
 
-  <!-- Modal -->
+  <!-- Modals -->
   <app-ajouter-reservation-modal
-    [isOpen]="isModalOpen"
-    [reservation]="selectedReservation"
-    (close)="onModalClose()"
-    (saved)="onModalSaved()"
+    [isOpen]="isAddModalOpen"
+    (close)="onAddModalClose()"
+    (saved)="onAddModalSaved()"
   ></app-ajouter-reservation-modal>
+
+  <app-modifier-reservation-modal
+    [isOpen]="isEditModalOpen"
+    [reservation]="selectedReservation"
+    (close)="onEditModalClose()"
+    (saved)="onEditModalSaved()"
+  ></app-modifier-reservation-modal>
 
 </div>

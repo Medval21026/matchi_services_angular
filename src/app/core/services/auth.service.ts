@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject, tap } from 'rxjs';
+import { Observable, BehaviorSubject, tap, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { LoginRequest, LoginResponse, ProprietaireDTO } from '../models/proprietaire.model';
 
@@ -15,19 +15,74 @@ export class AuthService {
   }
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.apiUrl}/login`, credentials).pipe(
+    console.log('AuthService.login - Envoi de la requête:', credentials);
+    
+    return this.http.post<LoginResponse>(
+      `${this.apiUrl}/login`,
+      credentials,
+      {
+        observe: 'response', // pour lire le header Authorization (Samsung Android/PWA)
+        withCredentials: true // OBLIGATOIRE pour mobile iOS/Android PWA
+      }
+    ).pipe(
       tap(response => {
-        this.setToken(response.token);
-        // Construire l'objet ProprietaireDTO depuis la réponse
-        const user: ProprietaireDTO = {
-          id: response.id,
-          nom: response.nom,
-          prenom: response.prenom,
-          telephone: response.telephone,
-          isActive: response.isActive,
-          terrainIds: response.terrainIds
-        };
-        this.setCurrentUser(user);
+        console.log('AuthService.login - Réponse reçue:', {
+          status: response.status,
+          headers: response.headers.keys(),
+          body: response.body
+        });
+
+        // 1. Essayer de lire le token depuis le header Authorization (Samsung Android/PWA compatible)
+        let token: string | null = response.headers.get('Authorization');
+        
+        // 2. Si pas dans le header, essayer dans le body
+        const body = response.body;
+        if (!token && body?.token) {
+          // Construire le token avec le tokenType si présent
+          const tokenType = body.tokenType || 'Bearer';
+          token = `${tokenType} ${body.token}`;
+          console.log('Token trouvé dans le body, formaté:', token);
+        }
+        
+        // 3. Stocker le token
+        if (token) {
+          // Nettoyer le token (enlever les espaces en début/fin)
+          token = token.trim();
+          // S'assurer que le token contient "Bearer " si nécessaire
+          if (!token.startsWith('Bearer ')) {
+            token = `Bearer ${token}`;
+          }
+          this.setToken(token);
+          console.log('Token stocké dans localStorage');
+        } else {
+          console.warn('Aucun token trouvé dans la réponse (ni header ni body)');
+        }
+        
+        // 4. Construire et stocker l'utilisateur
+        if (body) {
+          const user: ProprietaireDTO = {
+            id: body.id,
+            nom: body.nom,
+            prenom: body.prenom,
+            telephone: body.telephone,
+            isActive: body.isActive,
+            terrainIds: body.terrainIds
+          };
+          this.setCurrentUser(user);
+          console.log('Utilisateur stocké:', user);
+        } else {
+          console.warn('Body de la réponse est null ou vide');
+        }
+      }),
+      map(response => {
+        // Créer un LoginResponse compatible avec le code existant
+        const body = response.body;
+        if (body) {
+          return body;
+        }
+        // Si le body est null, essayer de construire une réponse minimale depuis les headers
+        console.error('Réponse de login invalide: body est null');
+        throw new Error('Réponse de login invalide: aucune donnée reçue du serveur');
       })
     );
   }

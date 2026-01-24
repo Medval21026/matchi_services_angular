@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://api.matchi.com/api'
+  apiUrl: 'http://localhost:8080/api' // IP locale pour Samsung Android/PWA
 };

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormArray, Validators, ReactiveFormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -80,7 +80,8 @@ export class ModifierAbonnementModalComponent implements OnInit {
     private indisponibleService: IndisponibleService,
     private notificationService: NotificationService,
     private dialog: MatDialog,
-    private translationService: TranslationService
+    private translationService: TranslationService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -120,7 +121,7 @@ export class ModifierAbonnementModalComponent implements OnInit {
     this.originalHoraires.clear();
 
     // Charger le numéro de téléphone du client
-    let clientTelephone: string | number = 'Chargement...';
+    let clientTelephone: string | number = this.translationService.translate('abonnement.loading');
     
     if (abonnement.clientTelephone) {
       clientTelephone = abonnement.clientTelephone;
@@ -134,7 +135,7 @@ export class ModifierAbonnementModalComponent implements OnInit {
       // Si le téléphone n'est pas disponible, le récupérer via le clientId
       this.clientService.getClientById(abonnement.clientId).subscribe({
         next: (client) => {
-          clientTelephone = client.telephone || 'Non disponible';
+          clientTelephone = client.telephone || this.translationService.translate('abonnement.notAvailable');
           this.abonnementForm.patchValue({
             clientTelephone: clientTelephone,
             dateDebut: abonnement.dateDebut,
@@ -143,7 +144,7 @@ export class ModifierAbonnementModalComponent implements OnInit {
           });
         },
         error: () => {
-          clientTelephone = 'Non disponible';
+          clientTelephone = this.translationService.translate('abonnement.notAvailable');
           this.abonnementForm.patchValue({
             clientTelephone: clientTelephone,
             dateDebut: abonnement.dateDebut,
@@ -153,7 +154,7 @@ export class ModifierAbonnementModalComponent implements OnInit {
         }
       });
     } else {
-      clientTelephone = 'Non disponible';
+      clientTelephone = this.translationService.translate('abonnement.notAvailable');
       this.abonnementForm.patchValue({
         clientTelephone: clientTelephone,
         dateDebut: abonnement.dateDebut,
@@ -194,40 +195,41 @@ export class ModifierAbonnementModalComponent implements OnInit {
 
   addHoraire(): void {
     const horaireGroup = this.fb.group({
-      id: [null], // Nouvel horaire, pas d'ID
+      id: [null],
       jourSemaine: ['', Validators.required],
       heureDebut: ['', Validators.required],
       prixHeure: ['', [Validators.required, Validators.min(0)]]
     });
     this.horaires.push(horaireGroup);
   }
+  
 
   removeHoraire(index: number): void {
     const horaireGroup = this.horaires.at(index) as FormGroup;
     const horaireValue = horaireGroup.value;
-    
-    // Construire le message de confirmation
+  
     let message = this.translationService.translate('abonnement.deleteScheduleConfirm');
     if (horaireValue.jourSemaine && horaireValue.heureDebut) {
       const jourFormate = this.formatJour(horaireValue.jourSemaine);
       message = `${this.translationService.translate('abonnement.deleteScheduleConfirmWithDetails')} ${jourFormate} ${this.translationService.translate('abonnement.at')} ${horaireValue.heureDebut} ?`;
     }
-    
+  
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       width: '400px',
       disableClose: true,
-      data: {
-        message: message
-      }
+      data: { message }
     });
-
+  
     dialogRef.afterClosed().subscribe(result => {
       if (result === true) {
-        this.horaires.removeAt(index);
-        this.notificationService.showInfo('Horaire supprimé du formulaire');
+        // 🔹 Ne pas toucher originalHoraires ici
+        this.horaires.removeAt(index);  // juste supprimer du FormArray
+        this.cdr.detectChanges();
+        this.notificationService.showInfo(this.translationService.translate('abonnement.scheduleRemovedFromForm'));
       }
     });
   }
+  
 
   closeModal(): void {
     this.close.emit();
@@ -237,7 +239,7 @@ export class ModifierAbonnementModalComponent implements OnInit {
   onSubmit(): void {
     if (this.abonnementForm.invalid || !this._abonnement || !this.originalAbonnement) {
       this.markFormGroupTouched(this.abonnementForm);
-      this.errorMessage = 'Veuillez remplir tous les champs requis correctement.';
+      this.errorMessage = this.translationService.translate('abonnement.fillAllFields');
       return;
     }
 
@@ -300,54 +302,105 @@ export class ModifierAbonnementModalComponent implements OnInit {
     });
 
     // Identifier les horaires supprimés (présents dans original mais pas dans le formulaire)
-    this.originalHoraires.forEach((original, id) => {
+    // Identifier les horaires supprimés
+    this.originalHoraires.forEach((_, id) => {
       const stillExists = formValue.horaires.some((h: any) => h.id === id);
       if (!stillExists) {
-        horairesToDelete.push(id);
+        horairesToDelete.push(id); // là, ça marchera car originalHoraires est intact
       }
     });
+
+    // Vérifier les doublons dans les horaires (même jourSemaine + heureDebut + prixHeure)
+    const horairesMap = new Map<string, number[]>();
+    formValue.horaires.forEach((h: any, index: number) => {
+      const cle = `${h.jourSemaine}_${h.heureDebut}_${h.prixHeure}`;
+      if (!horairesMap.has(cle)) {
+        horairesMap.set(cle, []);
+      }
+      horairesMap.get(cle)!.push(index);
+    });
+
+    // Détecter les doublons (exclure le cas où c'est le même horaire modifié)
+    const doublons: Array<{ index1: number; index2: number; cle: string }> = [];
+    horairesMap.forEach((indices, cle) => {
+      if (indices.length > 1) {
+        // Vérifier si ce sont des horaires différents (pas le même ID)
+        for (let i = 0; i < indices.length; i++) {
+          for (let j = i + 1; j < indices.length; j++) {
+            const h1 = formValue.horaires[indices[i]];
+            const h2 = formValue.horaires[indices[j]];
+            // Si les IDs sont différents (ou si l'un n'a pas d'ID), c'est un doublon
+            if (!h1.id || !h2.id || h1.id !== h2.id) {
+              doublons.push({ index1: indices[i], index2: indices[j], cle });
+            }
+          }
+        }
+      }
+    });
+
+    if (doublons.length > 0) {
+      this.isLoading = false;
+      const jourFormate = this.formatJour(formValue.horaires[doublons[0].index1].jourSemaine);
+      const message = this.translationService.translate('abonnement.duplicateScheduleError');
+      this.notificationService.showError(message);
+      this.errorMessage = message;
+      return;
+    }
 
     // Préparer les appels API
     const updateCalls: Array<any> = [];
 
-    // 1. Mettre à jour l'abonnement si nécessaire (sans horaires)
-    if (abonnementChanged) {
+    // 1. Mettre à jour l'abonnement avec les nouveaux horaires inclus dans le PUT
+    // Les nouveaux horaires doivent être envoyés dans le PUT /api/abonnement/{id}
+    const hasNewHoraires = horairesToCreate.length > 0;
+    const needsUpdate = abonnementChanged || hasNewHoraires;
+
+    if (needsUpdate) {
+      // Préparer les nouveaux horaires pour le PUT (format: {jourSemaine, heureDebut, prixHeure})
+      const nouveauxHoraires = horairesToCreate.map(h => ({
+        jourSemaine: h.jourSemaine,
+        heureDebut: h.heureDebut,
+        prixHeure: h.prixHeure
+      }));
+
       const updateData: AbonnementUpdateDTO = {
         clientTelephone: formValue.clientTelephone ? Number(formValue.clientTelephone) : undefined,
         dateDebut: formValue.dateDebut,
         dateFin: formValue.dateFin,
-        status: formValue.status as StatutAbonnement
-        // Ne pas inclure horaires ici
+        status: formValue.status as StatutAbonnement,
+        // Inclure les nouveaux horaires dans le PUT
+        horaires: hasNewHoraires ? nouveauxHoraires : undefined
       };
       updateCalls.push(
         this.abonnementService.updateAbonnement(this._abonnement.id, updateData).pipe(
-          catchError((error) => {
-            console.error('Erreur mise à jour abonnement:', error);
-            return of(null);
+          switchMap(() => of(true)),
+          catchError(error => { 
+            console.error('Erreur mise à jour abonnement:', error); 
+            return of(false); 
           })
         )
       );
+      
     }
 
-    // 2. Mettre à jour les horaires modifiés
+    // 2. Mettre à jour les horaires modifiés (utiliser les endpoints séparés)
     horairesToUpdate.forEach(({ id, data }) => {
       updateCalls.push(
         this.horaireService.updateHoraire(id, data).pipe(
+          switchMap(() => of(true)),
           catchError((error) => {
             console.error(`Erreur mise à jour horaire ${id}:`, error);
-            return of(null);
-          })
-        )
-      );
-    });
-
-    // 3. Créer les nouveaux horaires
-    horairesToCreate.forEach((horaire) => {
-      updateCalls.push(
-        this.horaireService.createHoraire(horaire).pipe(
-          catchError((error) => {
-            console.error('Erreur création horaire:', error);
-            return of(null);
+            // Vérifier si c'est une erreur de doublon/conflit
+            if (error.status === 409 || error.status === 422 || error.status === 400) {
+              const errorMessage = error.error?.message || error.error?.error || '';
+              if (errorMessage.toLowerCase().includes('existe') || 
+                  errorMessage.toLowerCase().includes('doublon') ||
+                  errorMessage.toLowerCase().includes('déjà') ||
+                  errorMessage.toLowerCase().includes('duplicate')) {
+                this.errorMessage = errorMessage || this.translationService.translate('abonnement.scheduleAlreadyExists');
+              }
+            }
+            return of(false); // Retourner false pour indiquer une erreur
           })
         )
       );
@@ -357,49 +410,51 @@ export class ModifierAbonnementModalComponent implements OnInit {
     horairesToDelete.forEach((id) => {
       updateCalls.push(
         this.horaireService.deleteHoraire(id).pipe(
-          catchError((error) => {
-            console.error(`Erreur suppression horaire ${id}:`, error);
-            return of(null);
+          switchMap(() => of(true)),
+          catchError(err => { 
+            console.error(`Erreur delete horaire ${id}`, err); 
+            return of(false); 
           })
         )
       );
     });
+    
 
     // Exécuter tous les appels en parallèle
     if (updateCalls.length === 0) {
       this.isLoading = false;
-      this.notificationService.showInfo('Aucune modification détectée');
+      this.notificationService.showInfo(this.translationService.translate('abonnement.noModificationDetected'));
       return;
     }
 
     forkJoin(updateCalls).subscribe({
       next: (results) => {
         this.isLoading = false;
-        const hasErrors = results.some(r => r === null);
+        const hasErrors = results.some(r => r === false || r === null); // Détecter les erreurs (false ou null)
         if (hasErrors) {
-          this.notificationService.showWarning('Certaines modifications ont échoué. Veuillez vérifier.');
+          // Si on a un message d'erreur spécifique, l'utiliser, sinon message générique
+          const errorMsg = this.errorMessage || this.translationService.translate('abonnement.someModificationsFailed');
+          this.notificationService.showError(errorMsg);
         } else {
-          this.notificationService.showSuccess('Abonnement modifié avec succès');
-          
-          // Synchroniser le terrain pour mettre à jour les indisponibilités dans le planning
-          // Attendre un peu pour que le backend traite les modifications avant de synchroniser
+          this.notificationService.showSuccess(this.translationService.translate('abonnement.modifiedSuccess'));
+    
+          // Synchroniser le terrain
           if (this._abonnement?.terrainId) {
             setTimeout(() => {
               this.indisponibleService.synchroniserTerrain(this._abonnement!.terrainId).subscribe({
                 next: () => {
                   console.log('Terrain synchronisé avec succès');
-                  this.notificationService.showInfo('Planning mis à jour. Rechargez la page planning pour voir les changements.');
+                  this.notificationService.showInfo(this.translationService.translate('abonnement.planningUpdated'));
                 },
                 error: (error) => {
                   console.error('Erreur synchronisation terrain:', error);
-                  // Ne pas bloquer l'utilisateur si la synchronisation échoue
                 }
               });
-            }, 500); // Attendre 500ms pour que le backend traite les modifications
+            }, 500);
           }
+          this.saved.emit();
+          this.closeModal();
         }
-        this.saved.emit();
-        this.closeModal();
       },
       error: (error: HttpErrorResponse) => {
         this.isLoading = false;
@@ -412,28 +467,54 @@ export class ModifierAbonnementModalComponent implements OnInit {
 
   private extractErrorMessage(error: HttpErrorResponse): string {
     if (error.error instanceof ErrorEvent) {
-      return `Erreur client: ${error.error.message}`;
+      return `${this.translationService.translate('abonnement.clientError')}: ${error.error.message}`;
     } else if (error.status === 0) {
-      return 'Erreur de connexion: Le serveur backend est inaccessible.';
+      return this.translationService.translate('abonnement.connectionError');
     } else {
-      let backendMessage = 'Une erreur inattendue est survenue.';
+      let backendMessage = this.translationService.translate('abonnement.unexpectedError');
       if (error.error && typeof error.error === 'string') {
         backendMessage = error.error;
       } else if (error.error && error.error.message) {
         backendMessage = error.error.message;
+      } else if (error.error && error.error.error) {
+        backendMessage = error.error.error;
+      }
+
+      // Détecter le message d'erreur de conflit lors de la création d'horaire
+      // Format: "Erreur lors de la création de l'horaire pour le SAMEDI (semaine 0) : Conflit avec une réservation ponctuelle : Le créneau 19:00-20:00 est déjà réservé pour ce terrain le 2026-01-24. Réservation existante : 19:00-20:00"
+      const scheduleConflictMatch = backendMessage.match(/Erreur lors de la création de l'horaire pour le (\w+) \(semaine (\d+)\)\s*:\s*Conflit avec une réservation ponctuelle\s*:\s*Le créneau ([\d:]+-[\d:]+) est déjà réservé pour ce terrain le ([\d-]+)\.\s*Réservation existante\s*:\s*([\d:]+-[\d:]+)/i);
+      
+      if (scheduleConflictMatch) {
+        const jour = scheduleConflictMatch[1];
+        const semaine = scheduleConflictMatch[2];
+        const creneau = scheduleConflictMatch[3] || scheduleConflictMatch[5];
+        const date = scheduleConflictMatch[4];
+        
+        // Traduire le jour si possible
+        const jourTraduit = this.translationService.translate(`days.${jour}`) !== `days.${jour}` 
+          ? this.translationService.translate(`days.${jour}`)
+          : jour;
+        
+        // Utiliser la traduction avec remplacement des placeholders
+        let translated = this.translationService.translate('abonnement.scheduleCreationConflict');
+        translated = translated.replace(/{jour}/g, jourTraduit);
+        translated = translated.replace(/{semaine}/g, semaine);
+        translated = translated.replace(/{creneau}/g, creneau);
+        translated = translated.replace(/{date}/g, date);
+        return translated;
       }
 
       switch (error.status) {
         case 400:
-          return `Données invalides: ${backendMessage}`;
+          return `${this.translationService.translate('abonnement.invalidData')}: ${backendMessage}`;
         case 401:
-          return 'Non autorisé: Votre session a expiré.';
+          return this.translationService.translate('abonnement.unauthorized');
         case 404:
-          return `Ressource non trouvée: ${backendMessage}`;
+          return `${this.translationService.translate('abonnement.resourceNotFound')}: ${backendMessage}`;
         case 500:
-          return `Erreur serveur: ${backendMessage}`;
+          return `${this.translationService.translate('abonnement.serverError')}: ${backendMessage}`;
         default:
-          return `Erreur lors de la modification de l'abonnement (Code: ${error.status}). ${backendMessage}`;
+          return `${this.translationService.translate('abonnement.modificationError')} (${this.translationService.translate('common.code')}: ${error.status}). ${backendMessage}`;
       }
     }
   }
@@ -455,19 +536,19 @@ export class ModifierAbonnementModalComponent implements OnInit {
   getFieldError(fieldName: string): string {
     const field = this.abonnementForm.get(fieldName);
     if (field?.hasError('required') && field.touched) {
-      return 'Ce champ est requis';
+      return this.translationService.translate('abonnement.fieldRequired');
     }
     if (field?.hasError('pattern') && field.touched) {
       if (fieldName === 'clientTelephone') {
-        return 'Le numéro de téléphone doit contenir uniquement des chiffres';
+        return this.translationService.translate('abonnement.phonePatternError');
       }
-      return 'Format invalide';
+      return this.translationService.translate('abonnement.fieldInvalidFormat');
     }
     if (fieldName === 'dateFin' && field?.touched) {
       const dateDebut = this.abonnementForm.get('dateDebut')?.value;
       const dateFin = field.value;
       if (dateDebut && dateFin && new Date(dateFin) < new Date(dateDebut)) {
-        return 'La date de fin doit être après la date de début';
+        return this.translationService.translate('abonnement.dateEndAfterStart');
       }
     }
     return '';
@@ -477,10 +558,10 @@ export class ModifierAbonnementModalComponent implements OnInit {
     const horaireGroup = this.horaires.at(index) as FormGroup;
     const field = horaireGroup.get(fieldName);
     if (field?.hasError('required') && field.touched) {
-      return 'Requis';
+      return this.translationService.translate('abonnement.fieldRequiredShort');
     }
     if (field?.hasError('min') && field.touched) {
-      return 'Valeur minimale: 0';
+      return this.translationService.translate('abonnement.minValue');
     }
     return '';
   }
@@ -492,4 +573,10 @@ export class ModifierAbonnementModalComponent implements OnInit {
     const day = String(today.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   }
+
+
+  trackByHoraire(index: number, control: any): any {
+    return control.get('id')?.value ?? index;
+  }
+  
 }

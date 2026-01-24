@@ -141,6 +141,14 @@ export class TerrainListComponent implements OnInit {
     });
   }
 
+  /**
+   * Vérifie si le propriétaire a déjà un terrain associé
+   * Le bouton "Ajouter terrain" sera caché si cette propriété retourne true
+   */
+  get hasTerrain(): boolean {
+    return this.terrains.length > 0;
+  }
+
   trackById(index: number, item: TerrainServiceDTO): number {
     return item.id || index;
   }
