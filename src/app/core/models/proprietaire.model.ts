@@ -24,3 +24,8 @@ export interface LoginResponse {
   token: string;
   tokenType: string;
 }
+
+export interface UpdatePasswordRequestDTO {
+  motDePasse: string;
+  newMotDePasse: string;
+}

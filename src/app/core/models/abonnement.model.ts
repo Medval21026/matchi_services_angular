@@ -17,7 +17,7 @@ export interface AbonnementCreateDTO {
   terrainId: number;
   clientTelephone: number;  // ⚠️ Téléphone, pas ID
   dateDebut: string;
-  dateFin: string;
+  dateFin?: string;  // Optionnel - si non fourni, le backend calcule automatiquement dateDebut + 30 jours
   horaires: AbonnementHoraireDTO[];
 }
 

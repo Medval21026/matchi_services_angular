@@ -64,9 +64,9 @@ export class AjouterAbonnementModalComponent implements OnInit {
       terrainId: ['', Validators.required],
       clientTelephone: ['', [Validators.required, Validators.pattern(/^\d+$/)]],
       dateDebut: [this.getTodayDate(), [Validators.required]],
-      dateFin: ['', [Validators.required]],
+      dateFin: [''], // Optionnel - calculé automatiquement par le backend (dateDebut + 30 jours)
       horaires: this.fb.array([])
-    }, { validators: this.dateRangeValidator });
+    });
   }
 
   get horaires(): FormArray {
@@ -81,14 +81,7 @@ export class AjouterAbonnementModalComponent implements OnInit {
     return `${year}-${month}-${day}`;
   }
 
-  dateRangeValidator(group: FormGroup) {
-    const dateDebut = group.get('dateDebut')?.value;
-    const dateFin = group.get('dateFin')?.value;
-    if (!dateDebut || !dateFin) return null;
-    const debut = new Date(dateDebut);
-    const fin = new Date(dateFin);
-    return fin >= debut ? null : { dateRangeInvalid: true };
-  }
+  // Validateur supprimé car dateFin est maintenant optionnel et calculé automatiquement par le backend
 
   private loadTerrains(): void {
     const currentUser = this.authService.getCurrentUser();
@@ -145,8 +138,7 @@ export class AjouterAbonnementModalComponent implements OnInit {
     this.close.emit();
     this.abonnementForm.reset();
     this.abonnementForm.patchValue({
-      dateDebut: this.getTodayDate(),
-      dateFin: ''
+      dateDebut: this.getTodayDate()
     });
     this.horaires.clear();
     this.errorMessage = '';
@@ -174,11 +166,13 @@ export class AjouterAbonnementModalComponent implements OnInit {
       prixHeure: Number(h.prixHeure)
     }));
 
+    // Construire l'objet abonnement sans dateFin si elle est vide
+    // Le backend calcule automatiquement dateFin = dateDebut + 30 jours si dateFin n'est pas fournie
     const abonnement: AbonnementCreateDTO = {
       terrainId: Number(formValue.terrainId),
       clientTelephone: Number(formValue.clientTelephone),
       dateDebut: formValue.dateDebut,
-      dateFin: formValue.dateFin,
+      ...(formValue.dateFin ? { dateFin: formValue.dateFin } : {}),
       horaires: horaires
     };
 
@@ -292,10 +286,5 @@ export class AjouterAbonnementModalComponent implements OnInit {
     return '';
   }
 
-  getDateRangeError(): string {
-    if (this.abonnementForm.hasError('dateRangeInvalid')) {
-      return this.translationService.translate('abonnement.dateEndAfterOrEqualStart');
-    }
-    return '';
-  }
+  // Méthode getDateRangeError supprimée car dateFin n'est plus requis
 }

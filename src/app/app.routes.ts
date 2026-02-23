@@ -21,6 +21,9 @@ import { AbonnementListComponent } from './features/abonnement/abonnement-list/a
 import { ReservationListComponent } from './features/reservation/reservation-list/reservation-list.component';
 import { ReservationCalendarComponent } from './features/reservation/reservation-calendar/reservation-calendar.component';
 
+// Profil Components
+import { ProfilProprietaireComponent } from './features/profil/profil-proprietaire/profil-proprietaire.component';
+
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
@@ -43,6 +46,9 @@ export const routes: Routes = [
       // Reservations Routes
       { path: 'reservations', component: ReservationListComponent },
       { path: 'reservations/calendar', component: ReservationCalendarComponent },
+      
+      // Profil Routes
+      { path: 'profil', component: ProfilProprietaireComponent },
     ]
   },
   { path: '**', redirectTo: '/login' }

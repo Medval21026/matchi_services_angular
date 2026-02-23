@@ -24,6 +24,7 @@ export class SidebarComponent {
     { path: '/dashboard/reservations/calendar', label: 'sidebar.planning', icon: 'calendar' },
     { path: '/dashboard/clients', label: 'sidebar.clients', icon: 'clients' },
     { path: '/dashboard/abonnements', label: 'sidebar.abonnements', icon: 'subscriptions' },
+    { path: '/dashboard/profil', label: 'sidebar.profil', icon: 'settings' },
   ];
 
   constructor(
@@ -54,6 +55,9 @@ export class SidebarComponent {
       return { exact: true };
     }
     if (item.path === '/dashboard/terrains') {
+      return { exact: true };
+    }
+    if (item.path === '/dashboard/profil') {
       return { exact: true };
     }
     return { exact: false };

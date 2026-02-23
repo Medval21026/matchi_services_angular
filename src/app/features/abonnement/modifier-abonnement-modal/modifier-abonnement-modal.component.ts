@@ -95,21 +95,13 @@ export class ModifierAbonnementModalComponent implements OnInit {
     this.abonnementForm = this.fb.group({
       clientTelephone: ['', [Validators.required, Validators.pattern(/^\d+$/)]],
       dateDebut: ['', Validators.required],
-      dateFin: ['', Validators.required],
+      dateFin: [''], // Optionnel - calculé automatiquement par le backend (dateDebut + 30 jours) si non fourni
       status: ['', Validators.required],
       horaires: this.fb.array([])
-    }, { validators: this.dateRangeValidator });
+    });
   }
 
-  private dateRangeValidator = (form: FormGroup): { [key: string]: any } | null => {
-    const dateDebut = form.get('dateDebut')?.value;
-    const dateFin = form.get('dateFin')?.value;
-    
-    if (dateDebut && dateFin && new Date(dateFin) < new Date(dateDebut)) {
-      return { dateRangeInvalid: true };
-    }
-    return null;
-  };
+  // Validateur supprimé car dateFin est maintenant optionnel et calculé automatiquement par le backend
 
   get horaires(): FormArray {
     return this.abonnementForm.get('horaires') as FormArray;
@@ -260,7 +252,7 @@ export class ModifierAbonnementModalComponent implements OnInit {
     const abonnementChanged = 
       newClientTel !== originalClientTel ||
       formValue.dateDebut !== this.originalAbonnement.dateDebut ||
-      formValue.dateFin !== this.originalAbonnement.dateFin ||
+      (formValue.dateFin && formValue.dateFin !== this.originalAbonnement.dateFin) ||
       formValue.status !== this.originalAbonnement.status;
 
     // Détecter les horaires modifiés
@@ -366,7 +358,8 @@ export class ModifierAbonnementModalComponent implements OnInit {
       const updateData: AbonnementUpdateDTO = {
         clientTelephone: formValue.clientTelephone ? Number(formValue.clientTelephone) : undefined,
         dateDebut: formValue.dateDebut,
-        dateFin: formValue.dateFin,
+        // dateFin n'est envoyé que s'il est fourni - sinon le backend calcule automatiquement dateDebut + 30 jours
+        ...(formValue.dateFin ? { dateFin: formValue.dateFin } : {}),
         status: formValue.status as StatutAbonnement,
         // Inclure les nouveaux horaires dans le PUT
         horaires: hasNewHoraires ? nouveauxHoraires : undefined
@@ -544,13 +537,7 @@ export class ModifierAbonnementModalComponent implements OnInit {
       }
       return this.translationService.translate('abonnement.fieldInvalidFormat');
     }
-    if (fieldName === 'dateFin' && field?.touched) {
-      const dateDebut = this.abonnementForm.get('dateDebut')?.value;
-      const dateFin = field.value;
-      if (dateDebut && dateFin && new Date(dateFin) < new Date(dateDebut)) {
-        return this.translationService.translate('abonnement.dateEndAfterStart');
-      }
-    }
+    // Validation dateFin supprimée car elle est maintenant optionnelle et calculée automatiquement
     return '';
   }
 

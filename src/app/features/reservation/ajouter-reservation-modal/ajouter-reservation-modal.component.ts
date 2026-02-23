@@ -115,7 +115,8 @@ export class AjouterReservationModalComponent implements OnInit, OnChanges {
   closeModal(): void {
     this.close.emit();
     this.reservationForm.reset({
-      date: this.getTodayDate()
+      date: this.getTodayDate(),
+      prix: '600' // Réinitialiser le prix à 600 comme valeur par défaut
     });
     this.errorMessage = '';
   }

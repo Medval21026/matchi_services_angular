@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ProprietaireDTO } from '../models/proprietaire.model';
+import { ProprietaireDTO, UpdatePasswordRequestDTO } from '../models/proprietaire.model';
 
 @Injectable({ providedIn: 'root' })
 export class ProprietaireService {
@@ -24,5 +24,9 @@ export class ProprietaireService {
 
   activateAccount(id: number): Observable<ProprietaireDTO> {
     return this.http.put<ProprietaireDTO>(`${this.apiUrl}/${id}/activate`, {});
+  }
+
+  updateMotPasseProprietaire(id: number, request: UpdatePasswordRequestDTO): Observable<void> {
+    return this.http.put<void>(`${this.apiUrl}/${id}/mot-de-passe`, request);
   }
 }

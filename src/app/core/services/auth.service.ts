@@ -125,4 +125,8 @@ export class AuthService {
       }
     }
   }
+
+  updateCurrentUser(user: ProprietaireDTO): void {
+    this.setCurrentUser(user);
+  }
 }
