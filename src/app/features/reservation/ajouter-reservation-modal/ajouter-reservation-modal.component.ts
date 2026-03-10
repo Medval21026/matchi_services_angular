@@ -10,11 +10,12 @@ import { TranslationService } from '../../../core/services/translation.service';
 import { ReservationPonctuelleDTO } from '../../../core/models/reservation.model';
 import { TerrainServiceDTO } from '../../../core/models/terrain.model';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { DateFormatDirective } from '../../../shared/directives/date-format.directive';
 
 @Component({
   selector: 'app-ajouter-reservation-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslatePipe],
+  imports: [CommonModule, ReactiveFormsModule, TranslatePipe, DateFormatDirective],
   templateUrl: './ajouter-reservation-modal.component.html',
   styleUrls: ['./ajouter-reservation-modal.component.css']
 })
