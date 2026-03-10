@@ -1,4 +1,4 @@
-import { Component, Input, forwardRef, OnInit, OnDestroy } from '@angular/core';
+import { Component, Input, forwardRef, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR, NG_VALIDATORS, Validator, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Subscription } from 'rxjs';
 
@@ -6,38 +6,77 @@ import { Subscription } from 'rxjs';
   selector: 'app-date-input',
   standalone: true,
   template: `
-    @if (isMobile) {
-      <input
-        type="text"
-        [id]="inputId"
-        [value]="displayValue"
-        [placeholder]="placeholder"
-        [class]="inputClass"
-        [class.border-red-500]="hasError"
-        [style]="inputStyle"
-        (input)="onTextInput($event)"
-        (blur)="onBlur()"
-        (focus)="onFocus()"
-        pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}"
-        maxlength="10"
-        [disabled]="isDisabled"
-      />
-    } @else {
-      <input
-        type="date"
-        [id]="inputId"
-        [value]="internalValue"
-        [min]="minDate"
-        [placeholder]="placeholder"
-        lang="fr"
-        [class]="inputClass"
-        [class.border-red-500]="hasError"
-        [style]="inputStyle"
-        (input)="onDateInput($event)"
-        (blur)="onBlur()"
-        [disabled]="isDisabled"
-      />
-    }
+    <div class="relative flex items-center w-full">
+      @if (isMobile) {
+        <div class="relative flex-1">
+          <input
+            type="text"
+            [id]="inputId"
+            [value]="displayValue"
+            [placeholder]="placeholder"
+            [class]="inputClass"
+            [class.border-red-500]="hasError"
+            [style]="inputStyle"
+            (input)="onTextInput($event)"
+            (blur)="onBlur()"
+            (focus)="onFocus()"
+            pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}"
+            maxlength="10"
+            [disabled]="isDisabled"
+            class="pr-10"
+          />
+          <button
+            type="button"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none z-10"
+            (click)="openDatePicker()"
+            [disabled]="isDisabled"
+            tabindex="-1"
+            aria-label="Ouvrir le calendrier"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+          </button>
+          <input
+            type="date"
+            [id]="inputId + '_hidden'"
+            [value]="internalValue"
+            [min]="minDate"
+            class="absolute opacity-0 pointer-events-none w-0 h-0"
+            (change)="onDatePickerChange($event)"
+            #hiddenDateInput
+          />
+        </div>
+      } @else {
+        <input
+          type="date"
+          [id]="inputId"
+          [value]="internalValue"
+          [min]="minDate"
+          [placeholder]="placeholder"
+          lang="fr"
+          [class]="inputClass"
+          [class.border-red-500]="hasError"
+          [style]="inputStyle"
+          (input)="onDateInput($event)"
+          (blur)="onBlur()"
+          [disabled]="isDisabled"
+          class="flex-1"
+        />
+        <button
+          type="button"
+          class="ml-2 p-2 text-gray-400 hover:text-gray-600 focus:outline-none rounded-lg hover:bg-gray-100 transition-colors"
+          (click)="openDatePicker()"
+          [disabled]="isDisabled"
+          tabindex="-1"
+          aria-label="Ouvrir le calendrier"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+        </button>
+      }
+    </div>
   `,
   providers: [
     {
@@ -59,6 +98,8 @@ export class DateInputComponent implements ControlValueAccessor, Validator, OnIn
   @Input() inputClass: string = '';
   @Input() inputStyle: string = '';
   @Input() hasError: boolean = false;
+
+  @ViewChild('hiddenDateInput', { static: false }) hiddenDateInput?: ElementRef<HTMLInputElement>;
 
   internalValue: string = ''; // Format YYYY-MM-DD
   displayValue: string = ''; // Format DD/MM/YYYY pour mobile
@@ -165,7 +206,32 @@ export class DateInputComponent implements ControlValueAccessor, Validator, OnIn
   onDateInput(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.internalValue = input.value;
+    if (this.isMobile) {
+      this.displayValue = this.formatToDisplay(input.value);
+    }
     this.onChange(input.value);
+  }
+
+  onDatePickerChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.internalValue = input.value;
+    this.displayValue = this.formatToDisplay(input.value);
+    this.onChange(input.value);
+  }
+
+  openDatePicker(): void {
+    if (this.isDisabled) return;
+    
+    if (this.isMobile && this.hiddenDateInput) {
+      // Sur mobile, ouvrir le date picker caché
+      this.hiddenDateInput.nativeElement.showPicker();
+    } else {
+      // Sur desktop, trouver l'input date et l'ouvrir
+      const dateInput = document.getElementById(this.inputId) as HTMLInputElement;
+      if (dateInput) {
+        dateInput.showPicker();
+      }
+    }
   }
 
   onFocus(): void {
