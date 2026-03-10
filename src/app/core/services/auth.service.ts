@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Observable, BehaviorSubject, tap, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { LoginRequest, LoginResponse, ProprietaireDTO } from '../models/proprietaire.model';
@@ -14,18 +14,38 @@ export class AuthService {
     this.loadCurrentUser();
   }
 
+  /**
+   * Détermine si on doit utiliser withCredentials
+   * - true en production ou sur mobile (PWA)
+   * - false en développement local pour éviter les problèmes CORS
+   */
+  private shouldUseCredentials(): boolean {
+    // En développement local, désactiver pour éviter CORS
+    if (!environment.production && window.location.hostname === 'localhost') {
+      return false;
+    }
+    // En production ou sur mobile, activer
+    return true;
+  }
+
   login(credentials: LoginRequest): Observable<LoginResponse> {
     console.log('AuthService.login - Envoi de la requête:', credentials);
+    
+    const options: { observe: 'response'; withCredentials?: boolean } = {
+      observe: 'response' as const // pour lire le header Authorization (Samsung Android/PWA)
+    };
+    
+    // Utiliser withCredentials seulement si nécessaire
+    if (this.shouldUseCredentials()) {
+      options.withCredentials = true;
+    }
     
     return this.http.post<LoginResponse>(
       `${this.apiUrl}/login`,
       credentials,
-      {
-        observe: 'response', // pour lire le header Authorization (Samsung Android/PWA)
-        withCredentials: true // OBLIGATOIRE pour mobile iOS/Android PWA
-      }
+      options
     ).pipe(
-      tap(response => {
+      tap((response: HttpResponse<LoginResponse>) => {
         console.log('AuthService.login - Réponse reçue:', {
           status: response.status,
           headers: response.headers.keys(),
@@ -74,7 +94,7 @@ export class AuthService {
           console.warn('Body de la réponse est null ou vide');
         }
       }),
-      map(response => {
+      map((response: HttpResponse<LoginResponse>) => {
         // Créer un LoginResponse compatible avec le code existant
         const body = response.body;
         if (body) {
