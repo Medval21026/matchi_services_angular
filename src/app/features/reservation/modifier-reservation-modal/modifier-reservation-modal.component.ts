@@ -81,7 +81,7 @@ export class ModifierReservationModalComponent implements OnInit, OnChanges {
     this.reservationForm = this.fb.group({
       terrainId: ['', Validators.required],
       date: ['', Validators.required],
-      heureDebut: ['', Validators.required],
+      heureDebut: [null, [Validators.required, Validators.min(0), Validators.max(23)]],
       clientTelephone: ['', [Validators.required, Validators.pattern(/^\d+$/)]],
       prix: ['', [Validators.required, Validators.min(0)]]
     });
@@ -90,7 +90,12 @@ export class ModifierReservationModalComponent implements OnInit, OnChanges {
   private loadReservationData(reservation: ReservationPonctuelleDTO): void {
     if (!reservation) return;
 
-    // Stocker les valeurs originales du créneau horaire
+    // Extraire seulement l'heure (ignorer les minutes)
+    const heureDebut = reservation.heureDebut 
+      ? parseInt(reservation.heureDebut.split(':')[0], 10) 
+      : null;
+
+    // Stocker les valeurs originales du créneau horaire (format complet pour la comparaison)
     this.originalTimeSlot = {
       terrainId: reservation.terrainId,
       date: reservation.date,
@@ -101,7 +106,7 @@ export class ModifierReservationModalComponent implements OnInit, OnChanges {
     this.reservationForm.patchValue({
       terrainId: reservation.terrainId,
       date: reservation.date,
-      heureDebut: reservation.heureDebut,
+      heureDebut: heureDebut,
       clientTelephone: reservation.clientTelephone,
       prix: reservation.prix
     });
@@ -164,20 +169,25 @@ export class ModifierReservationModalComponent implements OnInit, OnChanges {
     this.errorMessage = '';
 
     const formValue = this.reservationForm.value;
+    
+    // Formater l'heure en format "HH:00"
+    const heureDebutStr = `${String(formValue.heureDebut).padStart(2, '0')}:00`;
+    
     const reservation: ReservationPonctuelleDTO = {
       id: this.reservation.id,
       terrainId: Number(formValue.terrainId),
       date: formValue.date,
-      heureDebut: formValue.heureDebut,
+      heureDebut: heureDebutStr,
       clientTelephone: Number(formValue.clientTelephone),
       prix: Number(formValue.prix)
     };
 
     // Détecter si seul le téléphone ou le prix a changé (pas le créneau horaire)
+    // Comparer avec l'heure formatée
     const onlyPhoneOrPriceChanged = this.originalTimeSlot && (
       this.originalTimeSlot.terrainId === Number(formValue.terrainId) &&
       this.originalTimeSlot.date === formValue.date &&
-      this.originalTimeSlot.heureDebut === formValue.heureDebut
+      this.originalTimeSlot.heureDebut === heureDebutStr
     );
 
     this.reservationService.updateReservation(this.reservation.id, reservation).subscribe({
@@ -345,8 +355,11 @@ export class ModifierReservationModalComponent implements OnInit, OnChanges {
     if (field?.hasError('pattern') && field.touched) {
       return this.translationService.translate('reservation.fieldInvalidFormat');
     }
-    if (field?.hasError('min') && field.touched) {
+    if (field?.hasError('min') && field.touched && !fieldName.includes('heure')) {
       return this.translationService.translate('reservation.minValue');
+    }
+    if ((field?.hasError('min') || field?.hasError('max')) && field.touched && fieldName.includes('heure')) {
+      return 'L\'heure doit être entre 0 et 23';
     }
     return '';
   }

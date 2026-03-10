@@ -124,7 +124,7 @@ export class AjouterAbonnementModalComponent implements OnInit {
   addHoraire(): void {
     const horaireGroup = this.fb.group({
       jourSemaine: ['', Validators.required],
-      heureDebut: ['', Validators.required],
+      heureDebut: [null, [Validators.required, Validators.min(0), Validators.max(23)]],
       prixHeure: ['', [Validators.required, Validators.min(0)]]
     });
     this.horaires.push(horaireGroup);
@@ -162,7 +162,7 @@ export class AjouterAbonnementModalComponent implements OnInit {
     const formValue = this.abonnementForm.value;
     const horaires: AbonnementHoraireDTO[] = formValue.horaires.map((h: any) => ({
       jourSemaine: h.jourSemaine as JourSemaine,
-      heureDebut: h.heureDebut,
+      heureDebut: `${String(h.heureDebut).padStart(2, '0')}:00`, // Formater en "HH:00"
       prixHeure: Number(h.prixHeure)
     }));
 
@@ -280,8 +280,11 @@ export class AjouterAbonnementModalComponent implements OnInit {
     if (field?.hasError('required') && field.touched) {
       return this.translationService.translate('abonnement.fieldRequiredShort');
     }
-    if (field?.hasError('min') && field.touched) {
+    if (field?.hasError('min') && field.touched && !fieldName.includes('heure')) {
       return this.translationService.translate('abonnement.minValue');
+    }
+    if ((field?.hasError('min') || field?.hasError('max')) && field.touched && fieldName.includes('heure')) {
+      return 'L\'heure doit être entre 0 et 23';
     }
     return '';
   }

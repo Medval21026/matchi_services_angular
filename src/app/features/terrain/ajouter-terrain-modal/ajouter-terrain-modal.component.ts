@@ -41,16 +41,16 @@ export class AjouterTerrainModalComponent implements OnInit {
     this.terrainForm = this.fb.group({
       nom: ['', [Validators.required, Validators.minLength(2)]],
       adresse: ['', [Validators.required, Validators.minLength(5)]],
-      heureOuverture: ['17:00', [Validators.required, Validators.pattern(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/)]],
-      heureFermeture: ['01:00', [Validators.required, Validators.pattern(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/)]]
+      heureOuverture: [17, [Validators.required, Validators.min(0), Validators.max(23)]],
+      heureFermeture: [1, [Validators.required, Validators.min(0), Validators.max(23)]]
     });
   }
 
   closeModal(): void {
     this.close.emit();
     this.terrainForm.reset({
-      heureOuverture: '17:00',
-      heureFermeture: '01:00'
+      heureOuverture: 17,
+      heureFermeture: 1
     });
     this.errorMessage = '';
   }
@@ -71,9 +71,13 @@ export class AjouterTerrainModalComponent implements OnInit {
     }
   
     const formValue = this.terrainForm.value;
+
+    // Formater les heures en format "HH:00"
+    const heureOuvertureStr = `${String(formValue.heureOuverture).padStart(2, '0')}:00`;
+    const heureFermetureStr = `${String(formValue.heureFermeture).padStart(2, '0')}:00`;
   
-    let ouvertureMinutes = this.timeToMinutes(formValue.heureOuverture);
-    let fermetureMinutes = this.timeToMinutes(formValue.heureFermeture);
+    let ouvertureMinutes = this.timeToMinutes(heureOuvertureStr);
+    let fermetureMinutes = this.timeToMinutes(heureFermetureStr);
   
     // ⏰ Passage à minuit (ex: 17:00 → 01:00)
     if (fermetureMinutes <= ouvertureMinutes) {
@@ -94,8 +98,8 @@ export class AjouterTerrainModalComponent implements OnInit {
       nom: formValue.nom.trim(),
       adresse: formValue.adresse.trim(),
       proprietaireId: currentUser.id,
-      heureOuverture: formValue.heureOuverture,
-      heureFermeture: formValue.heureFermeture
+      heureOuverture: heureOuvertureStr,
+      heureFermeture: heureFermetureStr
     };
   
     this.terrainService.createTerrain(terrain).subscribe({
@@ -168,6 +172,11 @@ export class AjouterTerrainModalComponent implements OnInit {
     }
     if (field?.hasError('pattern') && field.touched) {
       return this.translationService.translate('terrain.fieldInvalidFormat');
+    }
+    if ((field?.hasError('min') || field?.hasError('max')) && field.touched) {
+      return fieldName.includes('heure') 
+        ? this.translationService.translate('terrain.hourRange') || 'L\'heure doit être entre 0 et 23'
+        : this.translationService.translate('terrain.fieldInvalidFormat');
     }
     return '';
   }

@@ -54,7 +54,7 @@ export class AjouterReservationModalComponent implements OnInit, OnChanges {
     this.reservationForm = this.fb.group({
       terrainId: [''], // Pas obligatoire car peut être pré-rempli automatiquement
       date: [this.getTodayDate(), Validators.required],
-      heureDebut: ['', Validators.required],
+      heureDebut: [null, [Validators.required, Validators.min(0), Validators.max(23)]],
       clientTelephone: ['', [Validators.required, Validators.pattern(/^\d+$/)]],
       prix: ['600', [Validators.required, Validators.min(0)]]
     });
@@ -131,10 +131,14 @@ export class AjouterReservationModalComponent implements OnInit, OnChanges {
     this.errorMessage = '';
 
     const formValue = this.reservationForm.value;
+    
+    // Formater l'heure en format "HH:00"
+    const heureDebutStr = `${String(formValue.heureDebut).padStart(2, '0')}:00`;
+    
     const reservation: ReservationPonctuelleDTO = {
       terrainId: Number(formValue.terrainId),
       date: formValue.date,
-      heureDebut: formValue.heureDebut,
+      heureDebut: heureDebutStr,
       clientTelephone: Number(formValue.clientTelephone),
       prix: Number(formValue.prix)
     };
@@ -285,6 +289,9 @@ export class AjouterReservationModalComponent implements OnInit, OnChanges {
     }
     if (field?.hasError('min') && field.touched) {
       return this.translationService.translate('reservation.minValue');
+    }
+    if ((field?.hasError('min') || field?.hasError('max')) && field.touched && fieldName.includes('heure')) {
+      return 'L\'heure doit être entre 0 et 23';
     }
     return '';
   }

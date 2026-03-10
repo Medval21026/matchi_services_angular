@@ -174,10 +174,15 @@ export class ModifierAbonnementModalComponent implements OnInit {
           this.originalHoraires.set(horaire.id, { ...horaire });
         }
         
+        // Extraire seulement l'heure (ignorer les minutes)
+        const heureDebut = horaire.heureDebut 
+          ? parseInt(horaire.heureDebut.split(':')[0], 10) 
+          : null;
+        
         const horaireGroup = this.fb.group({
           id: [horaire.id || null], // Garder l'ID pour la comparaison
           jourSemaine: [horaire.jourSemaine, Validators.required],
-          heureDebut: [horaire.heureDebut, Validators.required],
+          heureDebut: [heureDebut, [Validators.required, Validators.min(0), Validators.max(23)]],
           prixHeure: [horaire.prixHeure, [Validators.required, Validators.min(0)]]
         });
         this.horaires.push(horaireGroup);
@@ -189,7 +194,7 @@ export class ModifierAbonnementModalComponent implements OnInit {
     const horaireGroup = this.fb.group({
       id: [null],
       jourSemaine: ['', Validators.required],
-      heureDebut: ['', Validators.required],
+      heureDebut: [null, [Validators.required, Validators.min(0), Validators.max(23)]],
       prixHeure: ['', [Validators.required, Validators.min(0)]]
     });
     this.horaires.push(horaireGroup);
@@ -201,9 +206,10 @@ export class ModifierAbonnementModalComponent implements OnInit {
     const horaireValue = horaireGroup.value;
   
     let message = this.translationService.translate('abonnement.deleteScheduleConfirm');
-    if (horaireValue.jourSemaine && horaireValue.heureDebut) {
+    if (horaireValue.jourSemaine && horaireValue.heureDebut !== null && horaireValue.heureDebut !== undefined) {
       const jourFormate = this.formatJour(horaireValue.jourSemaine);
-      message = `${this.translationService.translate('abonnement.deleteScheduleConfirmWithDetails')} ${jourFormate} ${this.translationService.translate('abonnement.at')} ${horaireValue.heureDebut} ?`;
+      const heureFormatee = `${String(horaireValue.heureDebut).padStart(2, '0')}:00`;
+      message = `${this.translationService.translate('abonnement.deleteScheduleConfirmWithDetails')} ${jourFormate} ${this.translationService.translate('abonnement.at')} ${heureFormatee} ?`;
     }
   
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
@@ -214,8 +220,8 @@ export class ModifierAbonnementModalComponent implements OnInit {
   
     dialogRef.afterClosed().subscribe(result => {
       if (result === true) {
-        // 🔹 Ne pas toucher originalHoraires ici
-        this.horaires.removeAt(index);  // juste supprimer du FormArray
+        // Supprimer immédiatement l'horaire du FormArray
+        this.horaires.removeAt(index);
         this.cdr.detectChanges();
         this.notificationService.showInfo(this.translationService.translate('abonnement.scheduleRemovedFromForm'));
       }
@@ -262,13 +268,16 @@ export class ModifierAbonnementModalComponent implements OnInit {
 
     // Identifier les horaires modifiés, créés et supprimés
     formValue.horaires.forEach((h: any, index: number) => {
+      // Formater l'heure en format "HH:00"
+      const heureDebutStr = `${String(h.heureDebut).padStart(2, '0')}:00`;
+      
       if (h.id) {
         // Horaire existant - vérifier s'il a été modifié
         const original = this.originalHoraires.get(h.id);
         if (original) {
           const hasChanged = 
             h.jourSemaine !== original.jourSemaine ||
-            h.heureDebut !== original.heureDebut ||
+            heureDebutStr !== original.heureDebut ||
             Number(h.prixHeure) !== original.prixHeure;
           
           if (hasChanged) {
@@ -276,7 +285,7 @@ export class ModifierAbonnementModalComponent implements OnInit {
               id: h.id,
               data: {
                 jourSemaine: h.jourSemaine as JourSemaine,
-                heureDebut: h.heureDebut,
+                heureDebut: heureDebutStr,
                 prixHeure: Number(h.prixHeure)
               }
             });
@@ -287,25 +296,26 @@ export class ModifierAbonnementModalComponent implements OnInit {
         horairesToCreate.push({
           abonnementId: this._abonnement.id,
           jourSemaine: h.jourSemaine as JourSemaine,
-          heureDebut: h.heureDebut,
+          heureDebut: heureDebutStr,
           prixHeure: Number(h.prixHeure)
         });
       }
     });
 
     // Identifier les horaires supprimés (présents dans original mais pas dans le formulaire)
-    // Identifier les horaires supprimés
     this.originalHoraires.forEach((_, id) => {
       const stillExists = formValue.horaires.some((h: any) => h.id === id);
       if (!stillExists) {
-        horairesToDelete.push(id); // là, ça marchera car originalHoraires est intact
+        horairesToDelete.push(id);
       }
     });
 
     // Vérifier les doublons dans les horaires (même jourSemaine + heureDebut + prixHeure)
     const horairesMap = new Map<string, number[]>();
     formValue.horaires.forEach((h: any, index: number) => {
-      const cle = `${h.jourSemaine}_${h.heureDebut}_${h.prixHeure}`;
+      // Formater l'heure pour la comparaison
+      const heureDebutStr = `${String(h.heureDebut).padStart(2, '0')}:00`;
+      const cle = `${h.jourSemaine}_${heureDebutStr}_${h.prixHeure}`;
       if (!horairesMap.has(cle)) {
         horairesMap.set(cle, []);
       }
@@ -547,8 +557,11 @@ export class ModifierAbonnementModalComponent implements OnInit {
     if (field?.hasError('required') && field.touched) {
       return this.translationService.translate('abonnement.fieldRequiredShort');
     }
-    if (field?.hasError('min') && field.touched) {
+    if (field?.hasError('min') && field.touched && !fieldName.includes('heure')) {
       return this.translationService.translate('abonnement.minValue');
+    }
+    if ((field?.hasError('min') || field?.hasError('max')) && field.touched && fieldName.includes('heure')) {
+      return 'L\'heure doit être entre 0 et 23';
     }
     return '';
   }

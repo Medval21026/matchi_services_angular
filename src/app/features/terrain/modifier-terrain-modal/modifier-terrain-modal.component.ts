@@ -56,17 +56,25 @@ export class ModifierTerrainModalComponent implements OnInit {
     this.terrainForm = this.fb.group({
       nom: ['', [Validators.required, Validators.minLength(2)]],
       adresse: ['', [Validators.required, Validators.minLength(5)]],
-      heureOuverture: ['08:00', [Validators.required, Validators.pattern(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/)]],
-      heureFermeture: ['22:00', [Validators.required, Validators.pattern(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/)]]
+      heureOuverture: [8, [Validators.required, Validators.min(0), Validators.max(23)]],
+      heureFermeture: [22, [Validators.required, Validators.min(0), Validators.max(23)]]
     });
   }
 
   private loadTerrainData(terrain: TerrainServiceDTO): void {
+    // Extraire seulement l'heure (ignorer les minutes)
+    const heureOuverture = terrain.heureOuverture 
+      ? parseInt(terrain.heureOuverture.split(':')[0], 10) 
+      : 8;
+    const heureFermeture = terrain.heureFermeture 
+      ? parseInt(terrain.heureFermeture.split(':')[0], 10) 
+      : 22;
+
     this.terrainForm.patchValue({
       nom: terrain.nom,
       adresse: terrain.adresse,
-      heureOuverture: terrain.heureOuverture?.substring(0, 5) ?? '08:00',
-      heureFermeture: terrain.heureFermeture?.substring(0, 5) ?? '22:00'
+      heureOuverture: heureOuverture,
+      heureFermeture: heureFermeture
     });
   }
 
@@ -84,8 +92,12 @@ export class ModifierTerrainModalComponent implements OnInit {
 
     const formValue = this.terrainForm.value;
 
-    let ouvertureMinutes = this.timeToMinutes(formValue.heureOuverture);
-    let fermetureMinutes = this.timeToMinutes(formValue.heureFermeture);
+    // Formater les heures en format "HH:00"
+    const heureOuvertureStr = `${String(formValue.heureOuverture).padStart(2, '0')}:00`;
+    const heureFermetureStr = `${String(formValue.heureFermeture).padStart(2, '0')}:00`;
+
+    let ouvertureMinutes = this.timeToMinutes(heureOuvertureStr);
+    let fermetureMinutes = this.timeToMinutes(heureFermetureStr);
 
     // ⏰ Gestion passage à minuit (ex: 18:00 → 02:00)
     if (fermetureMinutes <= ouvertureMinutes) {
@@ -106,8 +118,8 @@ export class ModifierTerrainModalComponent implements OnInit {
       nom: formValue.nom.trim(),
       adresse: formValue.adresse.trim(),
       proprietaireId: this._terrain.proprietaireId,
-      heureOuverture: formValue.heureOuverture,
-      heureFermeture: formValue.heureFermeture
+      heureOuverture: heureOuvertureStr,
+      heureFermeture: heureFermetureStr
     };
 
     this.terrainService.updateTerrain(this._terrain.id, terrain).subscribe({
@@ -148,6 +160,11 @@ export class ModifierTerrainModalComponent implements OnInit {
         : this.translationService.translate('terrain.addressMinLength');
     }
     if (field.hasError('pattern')) return this.translationService.translate('terrain.fieldInvalidFormat');
+    if (field.hasError('min') || field.hasError('max')) {
+      return fieldName.includes('heure') 
+        ? this.translationService.translate('terrain.hourRange') || 'L\'heure doit être entre 0 et 23'
+        : this.translationService.translate('terrain.fieldInvalidFormat');
+    }
 
     return '';
   }

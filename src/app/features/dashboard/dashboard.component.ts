@@ -4,13 +4,11 @@ import { RouterModule, Router } from '@angular/router';
 import { SidebarComponent } from '../../shared/components/sidebar/sidebar.component';
 import { AuthService } from '../../core/services/auth.service';
 import { TranslationService } from '../../core/services/translation.service';
-import { NotificationService } from '../../core/services/notification.service';
-import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, SidebarComponent, TranslatePipe],
+  imports: [CommonModule, RouterModule, SidebarComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
@@ -21,18 +19,11 @@ export class DashboardComponent implements OnInit {
   constructor(
     private authService: AuthService,
     private router: Router,
-    private translationService: TranslationService,
-    private notificationService: NotificationService
+    private translationService: TranslationService
   ) {}
 
   getDirection(): 'rtl' | 'ltr' {
     return this.translationService.getDirection();
-  }
-
-  onLogout(): void {
-    this.authService.logout();
-    this.notificationService.showInfo('Déconnexion réussie');
-    this.router.navigate(['/login']);
   }
 
   ngOnInit(): void {

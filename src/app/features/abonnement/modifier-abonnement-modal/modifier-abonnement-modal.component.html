@@ -153,15 +153,20 @@
                 <label [for]="'heureDebut_' + i" class="block text-xs font-medium text-gray-600 mb-1">
                   {{ 'abonnement.startTime' | translate }}
                 </label>
-                <input
-                  type="time"
-                  [id]="'heureDebut_' + i"
-                  formControlName="heureDebut"
-                  inputmode="none"
-                  class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm min-h-[44px]"
-                  [class.border-red-500]="getHoraireFieldError(i, 'heureDebut')"
-                  style="-webkit-appearance: none; appearance: none;"
-                />
+                <div class="flex items-center gap-2">
+                  <input
+                    type="number"
+                    [id]="'heureDebut_' + i"
+                    formControlName="heureDebut"
+                    min="0"
+                    max="23"
+                    step="1"
+                    class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm min-h-[44px]"
+                    [class.border-red-500]="getHoraireFieldError(i, 'heureDebut')"
+                    placeholder="00"
+                  />
+                  <span class="text-gray-500 font-medium text-sm">:00</span>
+                </div>
                 <p *ngIf="getHoraireFieldError(i, 'heureDebut')" class="mt-1 text-xs text-red-600">
                   {{ getHoraireFieldError(i, 'heureDebut') }}
                 </p>

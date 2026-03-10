@@ -7,11 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:matchi_service_angular": "node dist/matchi_service_angular/server/server.mjs",
-    "cap:sync": "npx cap sync",
-    "cap:copy": "npx cap copy",
-    "cap:open:ios": "npx cap open ios",
-    "cap:build:sync": "npm run build && npx cap sync"
+    "serve:ssr:matchi_service_angular": "node dist/matchi_service_angular/server/server.mjs"
   },
   "prettier": {
     "printWidth": 100,
@@ -40,9 +36,6 @@
     "@angular/router": "^21.1.0",
     "@angular/service-worker": "^21.1.0",
     "@angular/ssr": "^21.1.0",
-    "@capacitor/cli": "^8.2.0",
-    "@capacitor/core": "^8.2.0",
-    "@capacitor/ios": "^8.2.0",
     "express": "^5.1.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"

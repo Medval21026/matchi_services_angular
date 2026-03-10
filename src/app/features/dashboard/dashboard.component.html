@@ -5,33 +5,18 @@
   <!-- Main Content -->
   <div class="flex-1 flex flex-col min-w-0 overflow-hidden" (click)="onContentClick()">
     <!-- Top Bar - Fixed -->
-    <div class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between flex-shrink-0" [class.flex-row-reverse]="getDirection() === 'rtl'">
-      <div class="flex items-center gap-4" [class.flex-row-reverse]="getDirection() === 'rtl'">
-        <button 
-          class="lg:hidden p-2 rounded-lg hover:bg-gray-100"
-          (click)="toggleSidebar($event)"
-        >
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-          </svg>
-        </button>
-        <div *ngIf="currentUser" class="hidden md:flex items-center gap-2 text-sm text-gray-700">
-          <span>{{ currentUser.prenom }} {{ currentUser.nom }}</span>
-        </div>
-      </div>
-      
-      <!-- Logout Button -->
+    <div class="bg-white border-b border-gray-200 px-6 py-4 flex items-center flex-shrink-0" [class.flex-row-reverse]="getDirection() === 'rtl'">
       <button 
-        (click)="onLogout()"
-        class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-        [class.flex-row-reverse]="getDirection() === 'rtl'"
-        [title]="'common.logout' | translate"
+        class="lg:hidden p-2 rounded-lg hover:bg-gray-100"
+        (click)="toggleSidebar($event)"
       >
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
         </svg>
-        <span class="hidden sm:inline">{{ 'common.logout' | translate }}</span>
       </button>
+      <div *ngIf="currentUser" class="hidden md:flex items-center gap-2 text-sm text-gray-700 ml-4" [class.mr-4]="getDirection() === 'rtl'" [class.ml-0]="getDirection() === 'rtl'">
+        <span>{{ currentUser.prenom }} {{ currentUser.nom }}</span>
+      </div>
     </div>
     
     <!-- Dashboard Content - Scrollable -->
