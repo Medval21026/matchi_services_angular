@@ -57,22 +57,43 @@ input[type="date"] {
 /* Style spécifique pour forcer le format de date correct sur mobile */
 input[type="date"]::-webkit-datetime-edit {
   padding: 0;
+  display: flex;
+  flex-direction: row;
 }
 
 input[type="date"]::-webkit-datetime-edit-fields-wrapper {
   padding: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 2px;
 }
 
 input[type="date"]::-webkit-datetime-edit-text {
-  padding: 0 4px;
+  padding: 0 2px;
   color: #374151;
+  display: inline-block;
 }
 
-input[type="date"]::-webkit-datetime-edit-month-field,
-input[type="date"]::-webkit-datetime-edit-day-field,
+/* Forcer l'ordre : jour, mois, année */
+input[type="date"]::-webkit-datetime-edit-day-field {
+  padding: 0 2px;
+  color: #374151;
+  min-width: 2ch;
+  text-align: center;
+}
+
+input[type="date"]::-webkit-datetime-edit-month-field {
+  padding: 0 2px;
+  color: #374151;
+  min-width: 2ch;
+  text-align: center;
+}
+
 input[type="date"]::-webkit-datetime-edit-year-field {
   padding: 0 2px;
   color: #374151;
+  min-width: 4ch;
+  text-align: center;
 }
 
 /* Amélioration pour les petits écrans */
@@ -90,5 +111,48 @@ input[type="date"]::-webkit-datetime-edit-year-field {
   input[type="date"] {
     /* S'assurer que le format est correct */
     font-variant-numeric: tabular-nums;
+    /* Forcer l'ordre des champs */
+    display: flex;
+  }
+  
+  /* Styles spécifiques pour mobile - forcer l'ordre jour/mois/année */
+  input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 2px;
+  }
+  
+  input[type="date"]::-webkit-datetime-edit-day-field {
+    order: 1;
+    min-width: 2ch;
+    max-width: 2ch;
+  }
+  
+  input[type="date"]::-webkit-datetime-edit-month-field {
+    order: 2;
+    min-width: 2ch;
+    max-width: 2ch;
+  }
+  
+  input[type="date"]::-webkit-datetime-edit-year-field {
+    order: 3;
+    min-width: 4ch;
+    max-width: 4ch;
+  }
+  
+  input[type="date"]::-webkit-datetime-edit-text {
+    order: 0;
+    padding: 0 1px;
+  }
+  
+  /* Séparateur après le jour */
+  input[type="date"]::-webkit-datetime-edit-text:nth-of-type(1) {
+    content: '/';
+  }
+  
+  /* Séparateur après le mois */
+  input[type="date"]::-webkit-datetime-edit-text:nth-of-type(2) {
+    content: '/';
   }
 }
