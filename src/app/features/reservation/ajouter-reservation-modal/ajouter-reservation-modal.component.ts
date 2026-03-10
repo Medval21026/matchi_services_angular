@@ -10,12 +10,12 @@ import { TranslationService } from '../../../core/services/translation.service';
 import { ReservationPonctuelleDTO } from '../../../core/models/reservation.model';
 import { TerrainServiceDTO } from '../../../core/models/terrain.model';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
-import { DateFormatDirective } from '../../../shared/directives/date-format.directive';
+import { DateInputComponent } from '../../../shared/components/date-input/date-input.component';
 
 @Component({
   selector: 'app-ajouter-reservation-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslatePipe, DateFormatDirective],
+  imports: [CommonModule, ReactiveFormsModule, TranslatePipe, DateInputComponent],
   templateUrl: './ajouter-reservation-modal.component.html',
   styleUrls: ['./ajouter-reservation-modal.component.css']
 })
@@ -61,7 +61,7 @@ export class AjouterReservationModalComponent implements OnInit, OnChanges {
     });
   }
 
-  private getTodayDate(): string {
+  getTodayDate(): string {
     const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');

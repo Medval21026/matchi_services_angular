@@ -11,12 +11,12 @@ import { TerrainServiceDTO } from '../../../core/models/terrain.model';
 import { JourSemaine } from '../../../core/models/common.models';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { TranslationService } from '../../../core/services/translation.service';
-import { DateFormatDirective } from '../../../shared/directives/date-format.directive';
+import { DateInputComponent } from '../../../shared/components/date-input/date-input.component';
 
 @Component({
   selector: 'app-ajouter-abonnement-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslatePipe, DateFormatDirective],
+  imports: [CommonModule, ReactiveFormsModule, TranslatePipe, DateInputComponent],
   templateUrl: './ajouter-abonnement-modal.component.html',
   styleUrls: ['./ajouter-abonnement-modal.component.css']
 })

@@ -15,12 +15,12 @@ import { JourSemaine, StatutAbonnement } from '../../../core/models/common.model
 import { ConfirmationDialogComponent } from '../../../shared/components/confirmation-dialog/confirmation-dialog.component';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { TranslationService } from '../../../core/services/translation.service';
-import { DateFormatDirective } from '../../../shared/directives/date-format.directive';
+import { DateInputComponent } from '../../../shared/components/date-input/date-input.component';
 
 @Component({
   selector: 'app-modifier-abonnement-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslatePipe, DateFormatDirective],
+  imports: [CommonModule, ReactiveFormsModule, TranslatePipe, DateInputComponent],
   templateUrl: './modifier-abonnement-modal.component.html',
   styleUrls: ['./modifier-abonnement-modal.component.css']
 })
