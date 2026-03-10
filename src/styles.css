@@ -33,6 +33,9 @@ input[type="time"] {
   font-size: 16px; /* Évite le zoom automatique sur iOS */
   -webkit-appearance: none;
   appearance: none;
+  /* Forcer le format de date correct */
+  text-align: left;
+  direction: ltr;
 }
 
 /* Sur iOS, les inputs date/time ouvrent le sélecteur natif */
@@ -45,11 +48,47 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   height: 20px;
 }
 
+/* Correction du format de date sur mobile */
+input[type="date"] {
+  /* Forcer le format YYYY-MM-DD pour la valeur, mais afficher correctement */
+  color-scheme: light;
+}
+
+/* Style spécifique pour forcer le format de date correct sur mobile */
+input[type="date"]::-webkit-datetime-edit {
+  padding: 0;
+}
+
+input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+
+input[type="date"]::-webkit-datetime-edit-text {
+  padding: 0 4px;
+  color: #374151;
+}
+
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  padding: 0 2px;
+  color: #374151;
+}
+
 /* Amélioration pour les petits écrans */
 @media (max-width: 640px) {
   input[type="date"],
   input[type="time"] {
     font-size: 16px; /* Important pour éviter le zoom sur iOS */
     padding: 12px 16px;
+    /* Forcer le format de date correct sur mobile */
+    text-align: left;
+    direction: ltr;
+  }
+  
+  /* Correction spécifique pour le format de date sur mobile */
+  input[type="date"] {
+    /* S'assurer que le format est correct */
+    font-variant-numeric: tabular-nums;
   }
 }
