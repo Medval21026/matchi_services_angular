@@ -64,9 +64,10 @@
           formControlName="date"
           inputmode="none"
           lang="fr"
+          placeholder="JJ/MM/AAAA"
           class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
           [class.border-red-500]="getFieldError('date')"
-          style="-webkit-appearance: none; appearance: none; text-align: left; direction: ltr;"
+          style="-webkit-appearance: none; appearance: none; text-align: left; direction: ltr; font-variant-numeric: tabular-nums;"
         />
         <p *ngIf="getFieldError('date')" class="mt-1 text-sm text-red-600">
           {{ getFieldError('date') }}

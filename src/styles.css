@@ -52,6 +52,11 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 input[type="date"] {
   /* Forcer le format YYYY-MM-DD pour la valeur, mais afficher correctement */
   color-scheme: light;
+  /* Forcer le format numérique tabulaire pour un meilleur alignement */
+  font-variant-numeric: tabular-nums;
+  /* S'assurer que le texte est aligné à gauche */
+  text-align: left !important;
+  direction: ltr !important;
 }
 
 /* Style spécifique pour forcer le format de date correct sur mobile */
@@ -117,42 +122,39 @@ input[type="date"]::-webkit-datetime-edit-year-field {
   
   /* Styles spécifiques pour mobile - forcer l'ordre jour/mois/année */
   input[type="date"]::-webkit-datetime-edit-fields-wrapper {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 2px;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 2px !important;
+    width: 100% !important;
   }
   
   input[type="date"]::-webkit-datetime-edit-day-field {
-    order: 1;
-    min-width: 2ch;
-    max-width: 2ch;
+    order: 1 !important;
+    min-width: 2ch !important;
+    max-width: 2ch !important;
+    width: 2ch !important;
+    text-align: center !important;
   }
   
   input[type="date"]::-webkit-datetime-edit-month-field {
-    order: 2;
-    min-width: 2ch;
-    max-width: 2ch;
+    order: 2 !important;
+    min-width: 2ch !important;
+    max-width: 2ch !important;
+    width: 2ch !important;
+    text-align: center !important;
   }
   
   input[type="date"]::-webkit-datetime-edit-year-field {
-    order: 3;
-    min-width: 4ch;
-    max-width: 4ch;
+    order: 3 !important;
+    min-width: 4ch !important;
+    max-width: 4ch !important;
+    width: 4ch !important;
+    text-align: center !important;
   }
   
   input[type="date"]::-webkit-datetime-edit-text {
-    order: 0;
-    padding: 0 1px;
-  }
-  
-  /* Séparateur après le jour */
-  input[type="date"]::-webkit-datetime-edit-text:nth-of-type(1) {
-    content: '/';
-  }
-  
-  /* Séparateur après le mois */
-  input[type="date"]::-webkit-datetime-edit-text:nth-of-type(2) {
-    content: '/';
+    padding: 0 1px !important;
+    color: #374151 !important;
   }
 }
