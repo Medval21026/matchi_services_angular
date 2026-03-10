@@ -12,13 +12,11 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR, NG_VALIDATORS, Validator, Abst
       [min]="minDate"
       [placeholder]="placeholder"
       lang="fr"
-      inputmode="none"
       [class]="inputClass"
       [class.border-red-500]="hasError"
       [style]="inputStyle"
       (input)="onDateInput($event)"
       (blur)="onBlur()"
-      (click)="onClick()"
       [disabled]="isDisabled"
     />
   `,
@@ -55,21 +53,6 @@ export class DateInputComponent implements ControlValueAccessor, Validator {
     const input = event.target as HTMLInputElement;
     this.internalValue = input.value;
     this.onChange(input.value);
-  }
-
-  onClick(): void {
-    // Sur mobile, forcer l'ouverture du calendrier
-    if (window.innerWidth <= 640) {
-      const input = document.getElementById(this.inputId) as HTMLInputElement;
-      if (input && typeof input.showPicker === 'function') {
-        try {
-          input.showPicker();
-        } catch (error) {
-          // Si showPicker n'est pas supporté, le navigateur ouvrira automatiquement le calendrier au focus
-          console.log('showPicker not supported, using native behavior');
-        }
-      }
-    }
   }
 
   onBlur(): void {
