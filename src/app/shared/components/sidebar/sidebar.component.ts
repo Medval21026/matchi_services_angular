@@ -1,10 +1,12 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { LanguageSelectorComponent } from '../language-selector/language-selector.component';
+import { TranslationService } from '../../../core/services/translation.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-sidebar',
@@ -13,9 +15,12 @@ import { LanguageSelectorComponent } from '../language-selector/language-selecto
   templateUrl: './sidebar.component.html',
   styleUrls: ['./sidebar.component.css']
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit, OnDestroy {
   @Input() isOpen = true;
   @Output() close = new EventEmitter<void>();
+
+  isRTL = false;
+  private langSubscription?: Subscription;
 
   menuItems = [
     { path: '/dashboard', label: 'sidebar.dashboard', icon: 'dashboard', active: true },
@@ -30,8 +35,22 @@ export class SidebarComponent {
   constructor(
     public router: Router,
     private authService: AuthService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private translationService: TranslationService
   ) {}
+
+  ngOnInit(): void {
+    this.isRTL = this.translationService.isRTL();
+    this.langSubscription = this.translationService.getCurrentLanguage().subscribe(() => {
+      this.isRTL = this.translationService.isRTL();
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.langSubscription) {
+      this.langSubscription.unsubscribe();
+    }
+  }
 
   onClose(): void {
     this.close.emit();

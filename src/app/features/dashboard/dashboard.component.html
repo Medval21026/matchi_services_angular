@@ -1,4 +1,4 @@
-<div class="flex h-screen bg-gray-50 overflow-hidden">
+<div class="flex h-screen bg-gray-50 overflow-hidden" [dir]="getDirection()">
   <!-- Sidebar -->
   <app-sidebar [isOpen]="isSidebarOpen" (close)="closeSidebar()"></app-sidebar>
   

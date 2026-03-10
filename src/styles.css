@@ -24,3 +24,32 @@
   background-color: #3b82f6 !important; /* blue-500 */
   color: white !important;
 }
+
+/* Amélioration des inputs date et time sur mobile iOS */
+input[type="date"],
+input[type="time"] {
+  /* Taille minimale pour faciliter le tap sur mobile */
+  min-height: 44px;
+  font-size: 16px; /* Évite le zoom automatique sur iOS */
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Sur iOS, les inputs date/time ouvrent le sélecteur natif */
+/* Mais on peut aussi taper directement */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 1;
+  width: 20px;
+  height: 20px;
+}
+
+/* Amélioration pour les petits écrans */
+@media (max-width: 640px) {
+  input[type="date"],
+  input[type="time"] {
+    font-size: 16px; /* Important pour éviter le zoom sur iOS */
+    padding: 12px 16px;
+  }
+}

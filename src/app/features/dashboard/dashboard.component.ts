@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { SidebarComponent } from '../../shared/components/sidebar/sidebar.component';
 import { AuthService } from '../../core/services/auth.service';
+import { TranslationService } from '../../core/services/translation.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -17,8 +18,13 @@ export class DashboardComponent implements OnInit {
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private translationService: TranslationService
   ) {}
+
+  getDirection(): 'rtl' | 'ltr' {
+    return this.translationService.getDirection();
+  }
 
   ngOnInit(): void {
     this.currentUser = this.authService.getCurrentUser();
