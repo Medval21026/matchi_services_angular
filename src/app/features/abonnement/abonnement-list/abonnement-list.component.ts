@@ -1,8 +1,8 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
-import { forkJoin, of } from 'rxjs';
+import { forkJoin, of, Subscription, interval } from 'rxjs';
 import { catchError, take } from 'rxjs/operators';
 import { AbonnementService } from '../../../core/services/abonnement.service';
 import { ClientAbonneService } from '../../../core/services/client-abonne.service';
@@ -22,7 +22,7 @@ import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
   templateUrl: './abonnement-list.component.html',
   styleUrls: ['./abonnement-list.component.css']
 })
-export class AbonnementListComponent implements OnInit {
+export class AbonnementListComponent implements OnInit, OnDestroy {
   abonnements: AbonnementDTO[] = [];
   filteredAbonnements: AbonnementDTO[] = [];
   clients: ClientAbonneDTO[] = [];
@@ -32,6 +32,9 @@ export class AbonnementListComponent implements OnInit {
   isAddModalOpen = false;
   isEditModalOpen = false;
   selectedAbonnement?: AbonnementDTO;
+
+  private refreshInterval?: Subscription;
+  private readonly REFRESH_INTERVAL_MS = 30000; // 30 secondes
 
   constructor(
     private abonnementService: AbonnementService,
@@ -44,6 +47,44 @@ export class AbonnementListComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadAllData();
+    this.startAutoRefresh();
+    this.setupVisibilityRefresh();
+  }
+
+  ngOnDestroy(): void {
+    this.stopAutoRefresh();
+  }
+
+  private startAutoRefresh(): void {
+    // Rafraîchir automatiquement toutes les 30 secondes
+    this.refreshInterval = interval(this.REFRESH_INTERVAL_MS).subscribe(() => {
+      // Ne rafraîchir que si l'onglet est visible et qu'aucun modal n'est ouvert
+      if (document.visibilityState === 'visible' && !this.isAddModalOpen && !this.isEditModalOpen) {
+        this.loadAllData();
+      }
+    });
+  }
+
+  private stopAutoRefresh(): void {
+    if (this.refreshInterval) {
+      this.refreshInterval.unsubscribe();
+    }
+  }
+
+  private setupVisibilityRefresh(): void {
+    // Rafraîchir quand l'utilisateur revient sur l'onglet
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && !this.isAddModalOpen && !this.isEditModalOpen) {
+        this.loadAllData();
+      }
+    });
+
+    // Rafraîchir quand la fenêtre reprend le focus
+    window.addEventListener('focus', () => {
+      if (!this.isAddModalOpen && !this.isEditModalOpen) {
+        this.loadAllData();
+      }
+    });
   }
 
   loadAllData(): void {

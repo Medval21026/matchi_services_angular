@@ -1,7 +1,8 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
+import { Subscription, interval } from 'rxjs';
 import { ReservationService } from '../../../core/services/reservation.service';
 import { TerrainService } from '../../../core/services/terrain.service';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -20,7 +21,7 @@ import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
   templateUrl: './reservation-list.component.html',
   styleUrls: ['./reservation-list.component.css']
 })
-export class ReservationListComponent implements OnInit {
+export class ReservationListComponent implements OnInit, OnDestroy {
 
   reservations: ReservationPonctuelleDTO[] = [];
   filteredReservations: ReservationPonctuelleDTO[] = [];
@@ -34,6 +35,9 @@ export class ReservationListComponent implements OnInit {
   isAddModalOpen = false;
   isEditModalOpen = false;
   selectedReservation?: ReservationPonctuelleDTO;
+
+  private refreshInterval?: Subscription;
+  private readonly REFRESH_INTERVAL_MS = 30000; // 30 secondes
 
   constructor(
     private reservationService: ReservationService,
@@ -51,6 +55,44 @@ export class ReservationListComponent implements OnInit {
   ngOnInit(): void {
     this.loadTerrains();
     this.loadReservations();
+    this.startAutoRefresh();
+    this.setupVisibilityRefresh();
+  }
+
+  ngOnDestroy(): void {
+    this.stopAutoRefresh();
+  }
+
+  private startAutoRefresh(): void {
+    // Rafraîchir automatiquement toutes les 30 secondes
+    this.refreshInterval = interval(this.REFRESH_INTERVAL_MS).subscribe(() => {
+      // Ne rafraîchir que si l'onglet est visible et qu'aucun modal n'est ouvert
+      if (document.visibilityState === 'visible' && !this.isAddModalOpen && !this.isEditModalOpen) {
+        this.loadReservations();
+      }
+    });
+  }
+
+  private stopAutoRefresh(): void {
+    if (this.refreshInterval) {
+      this.refreshInterval.unsubscribe();
+    }
+  }
+
+  private setupVisibilityRefresh(): void {
+    // Rafraîchir quand l'utilisateur revient sur l'onglet
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && !this.isAddModalOpen && !this.isEditModalOpen) {
+        this.loadReservations();
+      }
+    });
+
+    // Rafraîchir quand la fenêtre reprend le focus
+    window.addEventListener('focus', () => {
+      if (!this.isAddModalOpen && !this.isEditModalOpen) {
+        this.loadReservations();
+      }
+    });
   }
 
   private loadTerrains(): void {

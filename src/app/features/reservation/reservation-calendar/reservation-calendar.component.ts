@@ -1,7 +1,7 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Subscription, interval } from 'rxjs';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { TranslationService } from '../../../core/services/translation.service';
 import { IndisponibleService } from '../../../core/services/indisponible.service';
@@ -32,7 +32,7 @@ interface PlanningSlot {
   templateUrl: './reservation-calendar.component.html',
   styleUrls: ['./reservation-calendar.component.css']
 })
-export class ReservationCalendarComponent implements OnInit {
+export class ReservationCalendarComponent implements OnInit, OnDestroy {
   currentWeekStart: Date = new Date();
   indisponibles: IndisponibleHoraireDTO[] = [];
   terrains: TerrainServiceDTO[] = [];
@@ -54,6 +54,9 @@ export class ReservationCalendarComponent implements OnInit {
   
   // Grille de planning
   planningGrid: Map<string, PlanningSlot> = new Map();
+
+  private refreshInterval?: Subscription;
+  private readonly REFRESH_INTERVAL_MS = 30000; // 30 secondes
 
   constructor(
     private indisponibleService: IndisponibleService,
@@ -77,6 +80,57 @@ export class ReservationCalendarComponent implements OnInit {
     }).catch(() => {
       // Même en cas d'erreur, charger les terrains
       this.loadTerrains();
+    });
+    this.startAutoRefresh();
+    this.setupVisibilityRefresh();
+  }
+
+  ngOnDestroy(): void {
+    this.stopAutoRefresh();
+  }
+
+  private startAutoRefresh(): void {
+    // Rafraîchir automatiquement toutes les 30 secondes
+    this.refreshInterval = interval(this.REFRESH_INTERVAL_MS).subscribe(() => {
+      // Ne rafraîchir que si l'onglet est visible
+      if (document.visibilityState === 'visible') {
+        this.refreshData();
+      }
+    });
+  }
+
+  private stopAutoRefresh(): void {
+    if (this.refreshInterval) {
+      this.refreshInterval.unsubscribe();
+    }
+  }
+
+  private setupVisibilityRefresh(): void {
+    // Rafraîchir quand l'utilisateur revient sur l'onglet
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        this.refreshData();
+      }
+    });
+
+    // Rafraîchir quand la fenêtre reprend le focus
+    window.addEventListener('focus', () => {
+      this.refreshData();
+    });
+  }
+
+  private refreshData(): void {
+    // Recharger les données client (réservations, abonnements, clients)
+    // et les indisponibles si un terrain est sélectionné
+    this.loadClientData().then(() => {
+      if (this.selectedTerrainId) {
+        this.loadTerrains(); // Cette méthode recharge aussi les indisponibles
+      }
+    }).catch(() => {
+      // En cas d'erreur, essayer quand même de recharger les terrains
+      if (this.selectedTerrainId) {
+        this.loadTerrains();
+      }
     });
   }
 
