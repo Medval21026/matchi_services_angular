@@ -298,3 +298,14 @@ table tbody tr:hover {
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
+
+/* PWA Update Snackbar Styles */
+::ng-deep .pwa-update-snackbar {
+  background-color: #1e40af !important;
+  color: white !important;
+}
+
+::ng-deep .pwa-update-snackbar .mat-mdc-snack-bar-action {
+  color: white !important;
+  font-weight: 600;
+}
